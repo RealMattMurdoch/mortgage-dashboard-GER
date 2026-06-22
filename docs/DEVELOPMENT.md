@@ -13,6 +13,9 @@ python -m http.server 8000
 # then open http://127.0.0.1:8000/Mortgage_Dashboard.html
 ```
 
+If you maintain a personal fork alongside this public version, open them in different browsers (or
+use one incognito window) so their `localStorage` stays isolated.
+
 Append `?test` to the URL to run the in-app engine self-tests (a panel reports pass/fail and exposes
 `window.MD_ENGINE` for the accuracy harness).
 
