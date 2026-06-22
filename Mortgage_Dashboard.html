@@ -160,7 +160,9 @@ canvas{max-width:100%;display:block}
 .wprog>div{height:100%;background:var(--teal);transition:width .2s}
 .drow{display:flex;gap:8px;align-items:center;font-size:.84rem;padding:6px 0;border-bottom:1px solid var(--border)}
 .drow input[type=month]{width:120px}.drow input[type=number]{width:100px}
-.foot{text-align:center;max-width:1000px;margin:8px auto 0;padding:0 22px;font-size:.78rem;color:var(--muted)}
+.foot{text-align:center;max-width:1000px;margin:32px auto 0;padding:20px 22px 32px;font-size:.78rem;color:var(--muted);border-top:1px solid var(--border)}
+.foot-copy{font-size:.82rem;font-weight:600;margin-bottom:6px}
+.foot-copy a{color:var(--muted);text-decoration:none}.foot-copy a:hover{text-decoration:underline}
 .tb:focus-visible,.info-btn:focus-visible,.cite:focus-visible,.drawer .x:focus-visible,.proppill:focus-visible,.propbtn:focus-visible,.iconbtn:focus-visible,.wbtn:focus-visible,
 input:focus-visible,.gl:focus-visible,a:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:4px}
 #testpanel{position:fixed;inset:0;background:#0b1623;color:#cbd5e1;z-index:100;overflow:auto;padding:24px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
@@ -574,7 +576,10 @@ input:focus-visible,.gl:focus-visible,a:focus-visible{outline:2px solid var(--bl
   </div>
 </div>
 
-<p class="foot" data-i18n-html="foot">Open-source planning tool by <a href="https://github.com/RealMattMurdoch" target="_blank" rel="noopener">RealMattMurdoch</a>. <b>This is not financial or tax advice and the author is not a financial or tax adviser.</b> All figures, projections and forecasts are illustrative, may be wrong, and no responsibility is accepted for any decision made from them. Seek professional advice. Your data is saved only in your browser on this device. Developers: add <code>?test</code> to run the built-in self-tests.</p>
+<footer class="foot">
+  <div class="foot-copy">© 2026 <a href="https://github.com/RealMattMurdoch" target="_blank" rel="noopener">RealMattMurdoch</a> · <a href="https://github.com/RealMattMurdoch/mortgage-dashboard-GER" target="_blank" rel="noopener">Open source · Apache 2.0</a></div>
+  <div data-i18n-html="foot"><b>This is not financial or tax advice and the author is not a financial or tax adviser.</b> All figures, projections and forecasts are illustrative, may be wrong, and no responsibility is accepted for any decision made from them. Seek professional advice. Your data is saved only in your browser on this device. Developers: add <code>?test</code> to run the built-in self-tests.</div>
+</footer>
 
 </div>
 
@@ -811,7 +816,7 @@ input:focus-visible,.gl:focus-visible,a:focus-visible{outline:2px solid var(--bl
     facts_contacts_h:'🏦 Kontakt & Konto', facts_gs_h:'ℹ️ Gut zu wissen: der 15% Grundschuldzins',
     facts_gs_note:'Eine deutsche <span class="gl" tabindex="0" title="Grundschuld: das im Grundbuch eingetragene Recht der Bank an der Immobilie, die Sicherheit für das Darlehen.">Grundschuld</span> trägt einen hohen notariellen Zinssatz (12 bis 18%). Das ist <b>nicht Ihr Zins und wird nie berechnet</b>; es ist eine übliche Sicherungsobergrenze, die nur in einer Zwangsversteigerung eine Rolle spielt. Nichts zu tun.',
     facts_generic_note:'Länderspezifische Steuer- und Rechtshinweise werden für deutsche Objekte angezeigt. Für dieses Objekt funktioniert der Rechner weiterhin; die Steuerwerte verwenden den von Ihnen eingegebenen Grenzsteuersatz und die Abzüge.',
-    foot:'Open-Source-Planungstool von <a href="https://github.com/RealMattMurdoch" target="_blank" rel="noopener">RealMattMurdoch</a>. <b>Dies ist keine Steuer- oder Finanzberatung, und der Autor ist kein Steuer- oder Finanzberater.</b> Alle Werte, Projektionen und Prognosen sind illustrativ, können falsch sein, und es wird keine Haftung für Entscheidungen übernommen, die darauf beruhen. Holen Sie professionellen Rat ein. Ihre Daten werden nur im Browser auf diesem Gerät gespeichert. Entwickler: hängen Sie <code>?test</code> an, um die eingebauten Selbsttests auszuführen.',
+    foot:'<b>Dies ist keine Steuer- oder Finanzberatung, und der Autor ist kein Steuer- oder Finanzberater.</b> Alle Werte, Projektionen und Prognosen sind illustrativ, können falsch sein, und es wird keine Haftung für Entscheidungen übernommen, die darauf beruhen. Holen Sie professionellen Rat ein. Ihre Daten werden nur im Browser auf diesem Gerät gespeichert. Entwickler: hängen Sie <code>?test</code> an, um die eingebauten Selbsttests auszuführen.',
     // help drawer
     help_h:'⚡ Wie Sondertilgung funktioniert',
     help_p1:'Stellen Sie sich eine Sondertilgung wie ein Sparkonto vor, das Ihren Kreditzins bringt, nur dass das Geld Ihre Restschuld senkt, statt auf einem Konto zu liegen. Auf den getilgten Teil zahlen Sie keine Zinsen mehr.',
