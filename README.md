@@ -10,6 +10,7 @@ No server, no build step, no dependencies, no network calls. Your data stays in 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 ![No dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 ![Offline](https://img.shields.io/badge/network-none%20(offline)-brightgreen)
+![Browsers: Chrome, Firefox, Safari](https://img.shields.io/badge/browsers-Chrome%20%7C%20Firefox%20%7C%20Safari-brightgreen)
 
 > ## Disclaimer
 >
@@ -37,6 +38,14 @@ cd mortgage-dashboard
 On first run it seeds a fictional **"Sample apartment"** so every chart and table is populated.
 Edit it via **Edit values**, add your own property with the **+ Add property** wizard, or delete
 the sample once you have your own. Everything is stored per-property in `localStorage` on your device.
+
+## Browser support
+
+Works in all modern desktop and mobile browsers: **Google Chrome / Chromium (and Chromium-based
+browsers such as Edge and Brave), Mozilla Firefox, and Apple Safari**. The code is intentionally
+ES5-ish and uses no exotic APIs, so any current evergreen browser will do. `localStorage` must be
+enabled for your data to persist (it is on by default); the double-click `file://` path is covered by
+`tests/fileurl_test.py`.
 
 ## Features
 
