@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest. This is a small, single-file project, so the workflow is light.
+Hi, I am Matt. Thanks for your interest. This is a small, single-file project, so the workflow is light.
 
 By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
@@ -84,3 +84,17 @@ protection once in the GitHub UI:
 
 If you want to also restrict who can open PRs at all, keep the repo public for forks (recommended for
 an open project) rather than adding collaborators; forked PRs still require your approval to merge.
+
+**Solo-owner note.** GitHub does not let you approve your own pull request. If you are the only
+maintainer and require 1 approval, you would be unable to merge your own work. Fix this by adding
+yourself to the ruleset's **bypass list** (Rulesets let you do this per actor): external contributors
+still go fork -> PR -> your approval, while you can merge your own changes directly. Re-evaluate once
+you have a second trusted reviewer.
+
+**Recommended general settings** (Settings -> General -> Pull Requests):
+
+- Enable **Allow squash merging** and disable merge commits, for a clean linear history.
+- Enable **Automatically delete head branches** after merge.
+- Enable **Require conversation resolution before merging** (also available in the ruleset).
+- Under Settings -> Actions -> General, keep **Require approval for first-time contributors** so CI
+  does not run automatically on a stranger's first PR until you allow it.
