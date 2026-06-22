@@ -73,10 +73,13 @@ mortgage-dashboard/
   README.md                   this file
   LICENSE / NOTICE            Apache-2.0
   CONTRIBUTING.md             how to contribute
+  CODE_OF_CONDUCT.md          community expectations
   docs/
     ARCHITECTURE.md           data model, engine, render layer, i18n design
     DEVELOPMENT.md            how to run, test, and extend the app
     TECH_STACK.md             tech choices and why
+  private/                    git-ignored: YOUR real data goes here (see private/README.md)
+  .github/                    CODEOWNERS, PR/issue templates, CI workflow
   tests/
     README.md                 how to install and run the checks
     requirements.txt
@@ -86,6 +89,22 @@ mortgage-dashboard/
     fileurl_test.py           file:// (double-click) path check
     diag.py                   quick smoke test
 ```
+
+## Using it with your own data (and staying private)
+
+The repository ships only a **fictional sample**. Your real numbers stay in your browser
+(`localStorage`) and never touch git. The recommended two-tier setup, which works the same for you and
+for anyone who forks the tool:
+
+1. **Public repo** (this one): the app, the sample, docs, and tests. This is what you clone and what
+   pull requests target.
+2. **Your own data**: keep property JSON exports (from the app's `Export` button) and personal notes in
+   the **git-ignored [`private/`](private/) folder**. Nothing there is ever committed. If you customise
+   the app heavily for yourself, keep that copy in a separate **private** repository, and contribute
+   only generic improvements back here.
+
+This separation means you can `git pull` new versions without your figures ever being tracked, and open
+pull requests that contain only code.
 
 ## Testing
 
@@ -100,12 +119,35 @@ python tests/i18n_test.py       # DE/EN localisation            -> 27 / 27
 You can also open `Mortgage_Dashboard.html?test` in a browser to run the in-app engine self-tests.
 More detail in [`tests/README.md`](tests/README.md).
 
+## Contributing
+
+Got an idea to make this more useful? Found a bug, or a number that looks off? Contributions are very
+welcome. Open an issue to start a conversation, or send a pull request.
+
+Pull requests are the way changes get in. **Anyone can contribute, and every pull request is reviewed
+and approved by the owner ([@RealMattMurdoch](https://github.com/RealMattMurdoch)) before it is
+merged** (no direct pushes to `main`). A CI workflow runs the full test suite on each pull request, so
+please make sure the tests are green locally first.
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the workflow and code style, and
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) for community expectations. Please never include real
+personal financial data in a contribution.
+
+## Philosophy
+
+This is a small tool built for a simple reason: to help people understand a large financial commitment
+honestly and make calmer decisions about it. In that spirit it takes no data (no network calls, no
+analytics, no accounts), it is honest about what is an estimate versus a fact, and it is free to use,
+read, and build on. If you extend it, please keep it useful and kind, and keep it from harming the
+people who rely on it.
+
 ## Documentation
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) - how the app is built (read before changing it).
 - [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) - run, test, and extend it.
 - [`docs/TECH_STACK.md`](docs/TECH_STACK.md) - the stack and the reasoning behind it.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) - contribution workflow and code style.
+- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) - community expectations.
 
 ## Author
 

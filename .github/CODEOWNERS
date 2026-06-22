@@ -1,0 +1,4 @@
+# Every change requires review from the repository owner before it can be merged.
+# Combined with branch protection ("Require review from Code Owners"), this makes
+# owner approval mandatory on all pull requests.
+*       @RealMattMurdoch

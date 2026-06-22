@@ -19,11 +19,12 @@ test-results/
 *.png            # screenshots written by the test scripts (to the temp dir, but ignore anywhere)
 
 # ---- Private / personal data (keep your real figures OUT of this public repo) ----
-# This project ships only a fictional sample. If you fork it for your own property,
-# keep your real data in files matching these patterns so they are never committed.
+# This project ships only a fictional sample. Keep real data in private/ (see private/README.md),
+# or in files matching the patterns below, so they are never committed.
+private/*
+!private/README.md
 *.local.*
 *.private.*
-private/
 my-*/
 *-actuals.*
 *-actual.*

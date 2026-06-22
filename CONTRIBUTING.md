@@ -2,12 +2,21 @@
 
 Thanks for your interest. This is a small, single-file project, so the workflow is light.
 
-## Workflow
+By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-1. Fork and branch from `main`.
+## Workflow (pull requests are the default)
+
+Anyone can contribute, but changes land only through a reviewed pull request. There are **no direct
+pushes to `main`**: every change is reviewed and approved by the owner
+([@RealMattMurdoch](https://github.com/RealMattMurdoch)) before it is merged.
+
+1. **Fork** the repo and create a branch from `main` (e.g. `fix/rounding`, `feat/extra-costs`).
 2. Make your change in `Mortgage_Dashboard.html` (and the tests/docs if relevant).
-3. Run the test suite and confirm it is green (see below).
-4. Open a pull request describing what changed and why.
+3. Keep your own data out of it: real figures and notes live in the git-ignored
+   [`private/`](private/) folder, never in the diff.
+4. Run the test suite locally and confirm it is green (see below).
+5. Open a pull request describing what changed and why. The PR template has a short checklist.
+6. CI runs the full suite on your PR. The owner reviews, may request changes, and approves and merges.
 
 ## Running the tests
 
@@ -54,3 +63,24 @@ discrepancy, include the property inputs so it can be reproduced against `analys
 ## License
 
 By contributing you agree your contributions are licensed under the Apache License 2.0 (see `LICENSE`).
+
+---
+
+## For the maintainer: enforcing review (one-time GitHub setup)
+
+`.github/CODEOWNERS` already assigns every path to the owner, and `.github/workflows/ci.yml` runs the
+tests on each pull request. To make owner approval and green tests **mandatory**, enable branch
+protection once in the GitHub UI:
+
+1. **Settings -> Branches -> Add branch ruleset** (or "Add classic branch protection rule") for `main`.
+2. Turn on:
+   - **Require a pull request before merging** (this blocks direct pushes to `main`).
+   - **Require approvals** (set to 1).
+   - **Require review from Code Owners** (this routes every PR to you via `CODEOWNERS`).
+   - **Require status checks to pass before merging**, and select the `tests` workflow.
+   - Optionally **Do not allow bypassing the above settings** (applies the rules to admins too).
+3. Save. From then on, contributors fork and open PRs, CI must pass, and nothing merges into `main`
+   without your approval.
+
+If you want to also restrict who can open PRs at all, keep the repo public for forks (recommended for
+an open project) rather than adding collaborators; forked PRs still require your approval to merge.

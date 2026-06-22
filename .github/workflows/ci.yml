@@ -1,0 +1,36 @@
+name: tests
+
+# Runs the full suite on every pull request and on pushes to main.
+# Enable "Require status checks to pass before merging" in branch protection and
+# select this workflow, so pull requests cannot be merged unless the tests are green.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python -m pip install -r tests/requirements.txt
+
+      - name: Install Chromium
+        run: python -m playwright install --with-deps chromium
+
+      - name: End-to-end suite
+        run: python tests/e2e_test.py
+
+      - name: Maths-accuracy harness
+        run: python tests/analyst_check.py
+
+      - name: Localisation suite
+        run: python tests/i18n_test.py
