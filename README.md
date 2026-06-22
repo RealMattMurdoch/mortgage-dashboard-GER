@@ -11,9 +11,15 @@ No server, no build step, no dependencies, no network calls. Your data stays in 
 ![No dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 ![Offline](https://img.shields.io/badge/network-none%20(offline)-brightgreen)
 
-> **Not financial or tax advice.** Every number is a planning estimate, and the property shipped
-> with the app is a fictional sample. Confirm anything that matters with a qualified advisor or
-> Steuerberater.
+> ## Disclaimer
+>
+> **This is a software tool, not financial, tax, or legal advice.** The author is **not** a financial
+> or tax adviser. Every figure, calculation, projection, and forecast it produces is illustrative and
+> may be wrong. **No responsibility or liability is accepted** for any errors or inaccuracies, or for
+> any decision made on the basis of this tool. Always **seek professional advice** (for example from a
+> qualified financial adviser, tax adviser, or Steuerberater) before acting. The software is provided
+> "as is", without warranty of any kind (see [`LICENSE`](LICENSE) and [`DISCLAIMER.md`](DISCLAIMER.md)).
+> The property shipped with the app is a fictional sample, not real data.
 
 ---
 
@@ -72,6 +78,7 @@ mortgage-dashboard/
   Mortgage_Dashboard.html     the entire app (open this)
   README.md                   this file
   LICENSE / NOTICE            Apache-2.0
+  DISCLAIMER.md               not financial/tax advice; no warranty or liability
   CONTRIBUTING.md             how to contribute
   CODE_OF_CONDUCT.md          community expectations
   docs/
@@ -119,6 +126,20 @@ python tests/i18n_test.py       # DE/EN localisation            -> 27 / 27
 You can also open `Mortgage_Dashboard.html?test` in a browser to run the in-app engine self-tests.
 More detail in [`tests/README.md`](tests/README.md).
 
+## Accuracy and validation
+
+The **arithmetic** is checked against independent references, not just against itself: a from-scratch
+month-by-month amortiser, the textbook closed-form annuity formula, and open-source amortisers, all
+reproduced to the cent in `tests/analyst_check.py`. The app uses standard German conventions (nominal
+`Sollzins / 12`, monthly compounding, payments in arrears, Sondertilgung booked at the start of the year).
+
+This validates that the maths is internally correct. It does **not** mean any result is right for your
+situation. Outputs can legitimately differ from other mortgage calculators because of differing
+conventions (start-of-year vs end-of-year overpayments, day-count, rounding, or how the effective rate
+folds in fees), and a difference does not by itself mean either tool is wrong. This project does not
+claim to match, replace, or be endorsed by any other named product or service. See
+[`DISCLAIMER.md`](DISCLAIMER.md).
+
 ## Contributing
 
 Got an idea to make this more useful? Found a bug, or a number that looks off? Contributions are very
@@ -148,6 +169,7 @@ people who rely on it.
 - [`docs/TECH_STACK.md`](docs/TECH_STACK.md) - the stack and the reasoning behind it.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) - contribution workflow and code style.
 - [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) - community expectations.
+- [`DISCLAIMER.md`](DISCLAIMER.md) - not financial/tax advice; no warranty or liability.
 
 ## Author
 
@@ -159,4 +181,5 @@ Built by **RealMattMurdoch**.
 ## License
 
 Apache License 2.0. See [`LICENSE`](LICENSE). The software is provided "as is", without warranty of
-any kind, and is not financial or tax advice.
+any kind (LICENSE sections 7 and 8 disclaim warranty and limit liability), and is **not financial or
+tax advice**. See [`DISCLAIMER.md`](DISCLAIMER.md).

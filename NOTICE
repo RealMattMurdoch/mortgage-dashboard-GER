@@ -6,5 +6,10 @@ See the LICENSE file for the full text.
 
 All financial figures shipped with this software (the "Sample apartment"
 seed property and any examples in the docs or tests) are fictional and
-illustrative. They are not real loan, bank, account, or personal data, and
-nothing in this project is financial, tax, or legal advice.
+illustrative. They are not real loan, bank, account, or personal data.
+
+Nothing in this project is financial, tax, or legal advice. The author is not
+a financial or tax adviser. All output is illustrative and may be wrong, no
+responsibility or liability is accepted for any decision made from it, and you
+should seek professional advice. See DISCLAIMER.md and the warranty/liability
+disclaimers in the LICENSE (sections 7 and 8).
