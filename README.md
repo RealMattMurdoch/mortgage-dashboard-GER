@@ -12,16 +12,6 @@ No server, no build step, no dependencies, no network calls. Your data stays in 
 ![Offline](https://img.shields.io/badge/network-none%20(offline)-brightgreen)
 ![Browsers: Chrome, Firefox, Safari](https://img.shields.io/badge/browsers-Chrome%20%7C%20Firefox%20%7C%20Safari-brightgreen)
 
-> ## Disclaimer
->
-> **This is a software tool, not financial, tax, or legal advice.** The author is **not** a financial
-> or tax adviser. Every figure, calculation, projection, and forecast it produces is illustrative and
-> may be wrong. **No responsibility or liability is accepted** for any errors or inaccuracies, or for
-> any decision made on the basis of this tool. Always **seek professional advice** (for example from a
-> qualified financial adviser, tax adviser, or Steuerberater) before acting. The software is provided
-> "as is", without warranty of any kind (see [`LICENSE`](LICENSE) and [`DISCLAIMER.md`](DISCLAIMER.md)).
-> The property shipped with the app is a fictional sample, not real data.
-
 ---
 
 ## Quick start
@@ -30,8 +20,8 @@ No server, no build step, no dependencies, no network calls. Your data stays in 
 2. Double-click it. That is the whole install.
 
 ```bash
-git clone https://github.com/RealMattMurdoch/mortgage-dashboard.git
-cd mortgage-dashboard
+git clone https://github.com/RealMattMurdoch/mortgage-dashboard-GER.git
+cd mortgage-dashboard-GER
 # then open Mortgage_Dashboard.html in your browser
 ```
 
@@ -42,10 +32,7 @@ the sample once you have your own. Everything is stored per-property in `localSt
 ## Browser support
 
 Works in all modern desktop and mobile browsers: **Google Chrome / Chromium (and Chromium-based
-browsers such as Edge and Brave), Mozilla Firefox, and Apple Safari**. The code is intentionally
-ES5-ish and uses no exotic APIs, so any current evergreen browser will do. `localStorage` must be
-enabled for your data to persist (it is on by default); the double-click `file://` path is covered by
-`tests/fileurl_test.py`.
+browsers such as Edge and Brave), Mozilla Firefox, and Apple Safari**.
 
 ## Features
 
@@ -83,7 +70,7 @@ Playwright (headless Chromium). See [`docs/TECH_STACK.md`](docs/TECH_STACK.md) f
 ## Project structure
 
 ```
-mortgage-dashboard/
+mortgage-dashboard-GER/
   Mortgage_Dashboard.html     the entire app (open this)
   README.md                   this file
   LICENSE / NOTICE            Apache-2.0
@@ -183,7 +170,6 @@ people who rely on it.
 ## Author
 
 Built by **RealMattMurdoch**.
-
 - GitHub: https://github.com/RealMattMurdoch
 - LinkedIn: https://www.linkedin.com/in/matthewmurdoch/
 
@@ -192,3 +178,13 @@ Built by **RealMattMurdoch**.
 Apache License 2.0. See [`LICENSE`](LICENSE). The software is provided "as is", without warranty of
 any kind (LICENSE sections 7 and 8 disclaim warranty and limit liability), and is **not financial or
 tax advice**. See [`DISCLAIMER.md`](DISCLAIMER.md).
+
+> ## Disclaimer
+>
+> **This is a software tool, not financial, tax, or legal advice.** The author is **not** a financial
+> or tax adviser. Every figure, calculation, projection, and forecast it produces is illustrative and
+> may be wrong. **No responsibility or liability is accepted** for any errors or inaccuracies, or for
+> any decision made on the basis of this tool. Always **seek professional advice** (for example from a
+> qualified financial adviser, tax adviser, or Steuerberater) before acting. The software is provided
+> "as is", without warranty of any kind (see [`LICENSE`](LICENSE) and [`DISCLAIMER.md`](DISCLAIMER.md)).
+> The property shipped with the app is a fictional sample, not real data.
