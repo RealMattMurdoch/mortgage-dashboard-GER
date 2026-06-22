@@ -1,0 +1,1731 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="author" content="RealMattMurdoch">
+<meta name="description" content="Offline, single-file multi-property mortgage & buy-to-let dashboard for the German market (Sondertilgung, Anschlussfinanzierung, AfA, 10-year sale), with a DE/EN toggle. No network, no dependencies.">
+<title>Mortgage Dashboard</title>
+<!--
+  Multi-Property Mortgage & Investment Dashboard
+  Author:  RealMattMurdoch  (https://github.com/RealMattMurdoch)
+  License: Apache-2.0
+  Single self-contained HTML file. Offline, no dependencies, no network calls. Open by double-clicking.
+  Add ?test to the URL to run the built-in engine self-tests.
+  Each property is stored separately in the browser (localStorage) by id, and is seeded on first run
+  with a fictional sample property. All figures are illustrative, not real data, and not financial advice.
+-->
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#14283f;--blue:#2563eb;--lblue:#eef4ff;--teal:#0d9488;--lteal:#d3f3ef;
+  --slate:#94a3b8;--gold:#b45309;--lgold:#fef3c7;--red:#dc2626;--lred:#fee2e2;
+  --bg:#f4f6f9;--card:#fff;--border:#e3e8ef;--text:#16202c;--muted:#5b6b7c;--r:14px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
+.b{font-weight:700}
+.muted{color:var(--muted)}
+.muted-xs{font-size:.74rem;color:var(--muted);font-weight:400}
+.sl-edge{font-size:.82rem;color:var(--muted)}
+.mt1{margin-top:12px}
+.center{text-align:center}
+.hide{display:none!important}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.num{font-variant-numeric:tabular-nums}
+/* property switcher bar */
+.propbar{background:#0f1d30;color:#fff;display:flex;align-items:center;gap:8px;padding:8px 14px;overflow-x:auto}
+.propbar .lbl{font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;opacity:.6;margin-right:2px;white-space:nowrap}
+.proppill{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:6px 13px;font-size:.84rem;font-weight:600;cursor:pointer;white-space:nowrap}
+.proppill.on{background:var(--blue);border-color:var(--blue)}
+.proppill:hover{background:rgba(255,255,255,.2)}
+.propbtn{background:none;color:#9ecbff;border:1px dashed rgba(158,203,255,.5);border-radius:20px;padding:6px 12px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap}
+.propbtn:hover{background:rgba(158,203,255,.12)}
+.propbar .spacer{flex:1}
+.iconbtn{background:rgba(255,255,255,.08);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:.82rem;cursor:pointer;white-space:nowrap}
+.iconbtn:hover{background:rgba(255,255,255,.2)}
+.hdr{background:var(--navy);color:#fff;padding:16px 24px}
+.hdr h1{font-size:1.25rem;font-weight:800;letter-spacing:-.01em}
+.hdr p{font-size:.8rem;opacity:.75;margin-top:3px}
+.hero{background:linear-gradient(135deg,#14283f,#1f3a5c);color:#fff;padding:22px 24px 26px}
+.hero .q{font-size:.82rem;opacity:.75;text-transform:uppercase;letter-spacing:.06em}
+.hero .big{font-size:clamp(2.3rem,6vw,3.3rem);font-weight:800;letter-spacing:-.02em;margin:2px 0;font-variant-numeric:tabular-nums}
+.hero .anchor{font-size:.9rem;opacity:.85}
+.hero .gross{font-size:.82rem;opacity:.7;margin-top:2px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
+@media(max-width:680px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{background:rgba(255,255,255,.1);border-radius:10px;padding:11px 13px}
+.tile .tl{font-size:.68rem;opacity:.75;text-transform:uppercase;letter-spacing:.04em}
+.tile .tv{font-size:1.18rem;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums}
+.tile .ts{font-size:.7rem;opacity:.7;margin-top:1px}
+.cta{margin-top:16px;background:rgba(13,148,136,.22);border:1px solid rgba(13,148,136,.5);border-radius:10px;padding:11px 15px;font-size:.86rem;display:flex;gap:9px;align-items:flex-start}
+.cta b{color:#6ee7d6}
+.tabs{display:flex;background:var(--card);border-bottom:2px solid var(--border);overflow-x:auto;position:sticky;top:0;z-index:5}
+.tb{padding:13px 16px;border:none;background:none;cursor:pointer;font-size:.86rem;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.tb:hover{color:var(--blue)}.tb.on{color:var(--blue);border-bottom-color:var(--blue)}
+.wrap{max-width:1000px;margin:0 auto;padding:18px 22px 60px}
+.pane{display:none}.pane.on{display:block}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 2px rgba(16,32,52,.05),0 4px 14px rgba(16,32,52,.04)}
+.card h2{font-size:.98rem;font-weight:700;color:var(--navy);margin-bottom:6px}
+.card .sub{font-size:.84rem;color:var(--muted);margin-bottom:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:660px){.g2{grid-template-columns:1fr}}
+.row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:.88rem}
+.row:last-child{border-bottom:none}
+.row .l{color:var(--muted)}.row .v{font-weight:600;font-variant-numeric:tabular-nums}
+.row .v.out{color:var(--red)}.row .v.in{color:var(--teal)}
+.row.tot{background:var(--bg);margin:8px -20px -18px;padding:13px 20px;border-radius:0 0 var(--r) var(--r);border-top:2px solid var(--border)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{text-align:left;padding:9px 10px;background:var(--bg);color:var(--muted);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr.hl td{background:var(--lgold)}
+.tnum{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sl-row{display:flex;align-items:center;gap:10px;margin:8px 0}
+input[type=range]{flex:1;accent-color:var(--blue);height:6px}
+input[type=number],input[type=text],input[type=month]{padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:.95rem;font-variant-numeric:tabular-nums}
+input[type=number]{width:110px;text-align:right}
+.sl-v{font-weight:800;font-size:1.2rem;color:var(--blue);min-width:96px;text-align:right;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.74rem;font-weight:600}
+.pill.g{background:var(--lteal);color:var(--teal)}.pill.r{background:var(--lred);color:var(--red)}
+.pill.b{background:var(--lblue);color:var(--blue)}.pill.o{background:var(--lgold);color:var(--gold)}
+.note{border-left:4px solid var(--blue);background:var(--lblue);border-radius:8px;padding:11px 15px;margin:10px 0;font-size:.86rem;line-height:1.5}
+.note.good{border-color:var(--teal);background:var(--lteal)}
+.note.warn{border-color:var(--gold);background:var(--lgold)}
+.note.risk{border-color:var(--red);background:var(--lred)}
+.scen{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+@media(max-width:560px){.scen{grid-template-columns:1fr}}
+.sc{border-radius:12px;padding:16px}
+.sc.base{background:var(--bg);border:1px solid var(--border)}
+.sc.opt{background:var(--lteal);border:1px solid #99e3da}
+.sc .sl{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:8px}
+.sc .rr{display:flex;justify-content:space-between;font-size:.85rem;padding:4px 0}
+.sc .rr b{font-variant-numeric:tabular-nums}
+.twin{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+.tw{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center}
+.tw .tn{font-size:1.7rem;font-weight:800;font-variant-numeric:tabular-nums}
+.tw .tl{font-size:.78rem;color:var(--muted);margin-top:2px}
+.tag{display:inline-block;font-size:.66rem;font-weight:700;padding:1px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.03em;vertical-align:middle}
+.tag.ex{background:var(--lteal);color:var(--teal)}
+.tag.es{background:var(--lgold);color:var(--gold)}
+.cite{font-size:.7rem;font-weight:700;color:var(--blue);text-decoration:none;background:var(--lblue);padding:1px 6px;border-radius:5px;margin-left:3px;white-space:nowrap}
+.cite:hover{text-decoration:underline}
+.gl{border-bottom:1px dotted var(--muted);cursor:help}
+canvas{max-width:100%;display:block}
+.chart-tip{position:fixed;z-index:50;background:#14283f;color:#fff;font-size:.8rem;line-height:1.5;padding:9px 12px;border-radius:9px;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.28);max-width:250px;opacity:0;transition:opacity .1s}
+.chart-tip.on{opacity:1}
+.hint{font-size:.76rem;color:var(--muted);margin-top:6px;font-style:italic}
+.prog{height:11px;background:var(--border);border-radius:6px;overflow:hidden;margin:7px 0}
+.prog .fill{height:100%;border-radius:6px;background:var(--teal)}
+.tl-list{position:relative;padding-left:22px}
+.tl-list::before{content:'';position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--border)}
+.ti{position:relative;margin-bottom:16px}
+.ti::before{content:'';position:absolute;left:-19px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--blue);border:2px solid #fff;box-shadow:0 0 0 2px var(--blue)}
+.ti.past::before{background:var(--muted);box-shadow:0 0 0 2px var(--muted)}
+.ti.urg::before{background:var(--red);box-shadow:0 0 0 2px var(--red)}
+.ti.gold::before{background:var(--gold);box-shadow:0 0 0 2px var(--gold)}
+.ti .td{font-size:.75rem;color:var(--muted);font-weight:700}.ti .tt{font-weight:600;margin:1px 0}.ti .ts{font-size:.82rem;color:var(--muted)}
+.legend{display:flex;gap:16px;font-size:.78rem;color:var(--muted);margin-top:8px;flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+.sbar{display:flex;height:36px;border-radius:8px;overflow:hidden;font-size:.72rem;font-weight:700;color:#fff;margin:8px 0}
+.sbar>div{display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;min-width:0}
+.info-btn{background:var(--lblue);color:var(--blue);border:1px solid #c7dbff;border-radius:8px;padding:8px 14px;font-size:.85rem;font-weight:700;cursor:pointer;margin:6px 0 2px}
+.info-btn:hover{background:#dde9ff}
+.drawer-ov{position:fixed;inset:0;background:rgba(20,40,63,.45);opacity:0;pointer-events:none;transition:.2s;z-index:40}
+.drawer-ov.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(460px,94vw);background:var(--card);box-shadow:-8px 0 34px rgba(16,32,52,.22);transform:translateX(100%);transition:transform .25s ease;z-index:41;overflow-y:auto;padding:24px 22px 40px}
+.drawer.on{transform:translateX(0)}
+.drawer h2{font-size:1.1rem;color:var(--navy);margin-bottom:10px}
+.drawer p{font-size:.88rem;margin:8px 0}
+.drawer .x{position:absolute;top:12px;right:14px;font-size:1.6rem;line-height:1;cursor:pointer;color:var(--muted);background:none;border:none}
+.drawer .step{display:flex;gap:11px;margin:14px 0;font-size:.88rem}
+.drawer .step .n{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;font-weight:700;font-size:.85rem;display:flex;align-items:center;justify-content:center}
+.drawer .big2{font-size:1.45rem;font-weight:800;color:var(--teal);font-variant-numeric:tabular-nums;display:inline-block}
+/* wizard / manage forms */
+.field{margin:10px 0}
+.field label{display:block;font-size:.8rem;font-weight:600;color:var(--navy);margin-bottom:3px}
+.field .fh{font-size:.74rem;color:var(--muted);margin-top:2px}
+.field input{width:100%}
+.wstep{display:none}.wstep.on{display:block}
+.wnav{display:flex;justify-content:space-between;gap:8px;margin-top:18px}
+.wbtn{border:none;border-radius:8px;padding:9px 16px;font-size:.88rem;font-weight:700;cursor:pointer}
+.wbtn.pri{background:var(--blue);color:#fff}.wbtn.sec{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.wbtn.dan{background:var(--red);color:#fff}
+.wbtn:disabled{opacity:.5;cursor:not-allowed}
+.wprog{height:6px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:14px}
+.wprog>div{height:100%;background:var(--teal);transition:width .2s}
+.drow{display:flex;gap:8px;align-items:center;font-size:.84rem;padding:6px 0;border-bottom:1px solid var(--border)}
+.drow input[type=month]{width:120px}.drow input[type=number]{width:100px}
+.foot{text-align:center;max-width:1000px;margin:8px auto 0;padding:0 22px;font-size:.78rem;color:var(--muted)}
+.tb:focus-visible,.info-btn:focus-visible,.cite:focus-visible,.drawer .x:focus-visible,.proppill:focus-visible,.propbtn:focus-visible,.iconbtn:focus-visible,.wbtn:focus-visible,
+input:focus-visible,.gl:focus-visible,a:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:4px}
+#testpanel{position:fixed;inset:0;background:#0b1623;color:#cbd5e1;z-index:100;overflow:auto;padding:24px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+#testpanel .summary{font-size:1.5rem;font-weight:800;margin-bottom:14px}
+#testpanel .summary.ok{color:#5eead4}#testpanel .summary.bad{color:#fca5a5}
+#testpanel table{font-size:13px}
+#testpanel td{border-color:#243447;color:#cbd5e1;padding:6px 10px}
+#testpanel .pass{color:#5eead4}#testpanel .fail{color:#fca5a5;font-weight:700}
+#testpanel button{margin-bottom:16px;background:#1f3a5c;color:#fff;border:none;border-radius:8px;padding:8px 16px;font:inherit;cursor:pointer}
+@media (prefers-reduced-motion: reduce){.drawer,.drawer-ov,.chart-tip,.tb{transition:none !important}}
+@media print{
+  .drawer,.drawer-ov,.info-btn,.propbar,#testpanel{display:none !important}
+  .tabs{display:none}.pane{display:block !important;page-break-inside:avoid}
+  .hero{background:#14283f !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  input[type=range]{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- PROPERTY SWITCHER -->
+<div class="propbar" id="propbar" role="tablist" aria-label="Your properties">
+  <span class="lbl" data-i18n="pb_props">Properties</span>
+  <span id="prop-pills" style="display:flex;gap:8px"></span>
+  <button class="propbtn" id="prop-add" data-i18n="pb_add">+ Add property</button>
+  <span class="spacer"></span>
+  <button class="iconbtn" id="lang-toggle" title="Sprache wechseln / Switch language" aria-label="Switch language">DE</button>
+  <button class="iconbtn" id="prop-manage" data-i18n="pb_edit">⚙ Edit values</button>
+  <button class="iconbtn" id="prop-export" data-i18n="pb_export">⤓ Export</button>
+  <button class="iconbtn" id="prop-import" data-i18n="pb_import">⤒ Import</button>
+  <button class="iconbtn" id="prop-delete" data-i18n-title="pb_delete" title="Delete this property">🗑</button>
+</div>
+
+<div class="hdr">
+  <h1 id="hdr-title">🏠 Mortgage &amp; Investment Dashboard</h1>
+  <p id="hdr-sub">Musterstraße 12, 12345 Musterstadt · <span id="asof"></span></p>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="q" data-i18n="hero_q">What does this property really cost me?</div>
+  <div class="big" id="hero-net">~-141 &euro;<span style="font-size:1rem;font-weight:600">/month</span></div>
+  <div class="anchor" id="hero-anchor">after tax, to own a 320.000 &euro; property that a tenant is paying down for you</div>
+  <div class="gross" data-i18n-html="hero_gross">Gross cash gap <span id="hero-gross">-378 &euro;</span>/month, reduced by your tax benefit. Estimate, first full year.</div>
+  <div class="tiles">
+    <div class="tile"><div class="tl" data-i18n="hero_owe">You still owe</div><div class="tv" id="t-owe">~297.750 &euro;</div><div class="ts" id="t-owe-sub" data-i18n="hero_owe_s">approx. today</div></div>
+    <div class="tile"><div class="tl" data-i18n="hero_eq">Equity built so far</div><div class="tv" id="t-eq">~2.250 &euro;</div><div class="ts" data-i18n="hero_eq_s">principal repaid</div></div>
+    <div class="tile"><div class="tl" data-i18n="hero_date">Next big date</div><div class="tv" id="t-date">Dec 2035</div><div class="ts" id="t-date-sub">refinance then</div></div>
+    <div class="tile"><div class="tl" data-i18n="hero_allow">Overpay allowance</div><div class="tv" id="t-allow">15.000 &euro;</div><div class="ts" data-i18n="hero_allow_s">per year, no penalty</div></div>
+  </div>
+  <div class="cta" id="hero-cta" data-i18n-html="hero_cta">💡 <div><b>One thing to do now:</b> apply for the <span class="gl" tabindex="0" title="A wage-tax reduction: your expected rental loss is entered as a Freibetrag so you pay less tax each month, instead of waiting for the annual return.">Lohnsteuer-Ermäßigung</span> so your tax benefit arrives monthly in your salary, not 12+ months later.</div></div>
+</div>
+
+<div class="tabs" role="tablist" aria-label="Dashboard sections">
+  <button class="tb on" role="tab" id="tb-money"    aria-controls="tab-money"    aria-selected="true"  tabindex="0" data-i18n="tab_money">💶 Monthly money</button>
+  <button class="tb"    role="tab" id="tb-overpay"  aria-controls="tab-overpay"  aria-selected="false" tabindex="-1" data-i18n="tab_overpay">⚡ Overpay simulator</button>
+  <button class="tb"    role="tab" id="tb-plan2035" aria-controls="tab-plan2035" aria-selected="false" tabindex="-1" data-i18n="tab_plan2035">📅 Refinance plan</button>
+  <button class="tb"    role="tab" id="tb-tax"      aria-controls="tab-tax"      aria-selected="false" tabindex="-1" data-i18n="tab_tax">🇩🇪 Tax back</button>
+  <button class="tb"    role="tab" id="tb-sale"     aria-controls="tab-sale"     aria-selected="false" tabindex="-1" data-i18n="tab_sale">🏡 Sell &amp; profit</button>
+  <button class="tb"    role="tab" id="tb-facts"    aria-controls="tab-facts"    aria-selected="false" tabindex="-1" data-i18n="tab_facts">📋 The facts</button>
+</div>
+
+<div class="wrap">
+
+<!-- ============ MONTHLY MONEY ============ -->
+<div class="pane on" id="tab-money" role="tabpanel" aria-labelledby="tb-money" tabindex="0">
+  <div class="g2">
+    <div class="card">
+      <h2 data-i18n="mm_out_h">📤 What goes out</h2>
+      <div class="row"><span class="l"><span class="gl" tabindex="0" data-i18n="mm_mort" data-i18n-title="mm_mort_t" title="Your fixed monthly annuity: interest + principal.">Mortgage rate</span></span><span class="v out" id="m-mort">-1.397,87 &euro;</span></div>
+      <div class="row"><span class="l"><span data-i18n="mm_hg">Hausgeld / service charge</span> <span class="muted-xs" id="m-hg-note"></span></span><span class="v out" id="m-hg">-350,00 &euro;</span></div>
+      <div class="row"><span class="l"><span data-i18n="mm_sev">Management fee (SEV)</span> <span class="muted-xs" id="m-sev-note" data-i18n="mm_sev_note">gross</span></span><span class="v out" id="m-sev">-30,00 &euro;</span></div>
+      <div class="row tot"><span class="l b" data-i18n="mm_out_tot">Total out</span><span class="v out" id="m-out">-1.777,87 &euro;</span></div>
+    </div>
+    <div class="card">
+      <h2><span data-i18n="mm_in_h">📥 What comes in</span> <span class="pill b" id="m-rentfrom">from 01.08.2026</span></h2>
+      <div class="row"><span class="l"><span class="gl" tabindex="0" data-i18n="mm_cold" data-i18n-title="mm_cold_t" title="Cold rent: the rent itself, excluding utility bills.">Net cold rent</span></span><span class="v in" id="m-cold">+1.100,00 &euro;</span></div>
+      <div class="row"><span class="l"><span data-i18n="mm_bk">Betriebskosten prepayment</span> <span class="muted-xs" data-i18n="mm_passthrough">pass-through</span></span><span class="v muted" id="m-bk">+180,00 &euro;</span></div>
+      <div class="row"><span class="l"><span data-i18n="mm_hk">Heizkosten prepayment</span> <span class="muted-xs" data-i18n="mm_passthrough">pass-through</span></span><span class="v muted" id="m-hk">+120,00 &euro;</span></div>
+      <div class="row tot"><span class="l b" data-i18n="mm_warm">Warm rent</span><span class="v in" id="m-warm">+1.400,00 &euro;</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="mm_pos_h">⚖️ Your real monthly position</h2>
+    <div class="g2">
+      <div>
+        <div class="row"><span class="l" data-i18n="mm_warmout">Warm rent in, total out</span><span class="v out" id="m-gap">-377,87 &euro;</span></div>
+        <div class="row"><span class="l"><span data-i18n="mm_tben">Tax benefit</span> <span id="tr-badge" class="muted-xs">(at 42,00%)</span></span><span class="v in" id="m-tben">+~237 &euro;</span></div>
+        <div class="row tot"><span class="l b" data-i18n="mm_aftertax">After-tax net</span><span class="v" id="m-net" style="color:var(--red)">~-210 &euro;</span></div>
+        <p class="sub mt1" data-i18n-html="mm_marg_p"><span class="gl" tabindex="0" title="Grenzsteuersatz: the percentage of tax you pay on the top slice of your income. It decides how big your rental-loss refund is.">Your marginal tax rate</span> (set once, used everywhere):</p>
+        <div class="sl-row">
+          <span class="sl-edge">30%</span>
+          <input type="range" id="tsl" min="30" max="45" step="1" value="42" aria-label="Marginal tax rate, percent">
+          <span class="sl-edge">45%</span>
+          <span class="sl-v" id="tsl-v">42,00%</span>
+        </div>
+      </div>
+      <div>
+        <div class="note" data-i18n-html="mm_passnote">The Nebenkosten the tenant prepays is not yours to keep, it is a <span class="gl" tabindex="0" title="Pass-through: collected from the tenant, then paid out to cover actual utility bills. It nets to roughly zero over the year.">pass-through</span> to actual utility bills. So the honest income figure is the <b>cold rent</b>, not the warm.</div>
+        <div class="note good" data-i18n-html="mm_forcenote">You are not "losing" that gap. A large part of the mortgage payment is <b>principal</b>, you are force-saving into equity, not burning cash. The tax benefit covers much of the rest.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="mm_10y_h">📈 Your next 10 years (rent rises with inflation)</h2>
+    <p class="sub" data-i18n-html="mm_10y_sub">If the rent is an <span class="gl" tabindex="0" title="Indexmiete: rent linked to the consumer price index, raised by written notice.">Indexmiete</span> it can rise with the consumer price index while your mortgage stays fixed, so the monthly gap narrows over time. Drag the assumed inflation rate:</p>
+    <div class="sl-row">
+      <span class="sl-edge">0%</span>
+      <input type="range" id="idx" min="0" max="4" step="0.1" value="2" aria-label="Assumed annual rent inflation, percent">
+      <span class="sl-edge">4%</span>
+      <span class="sl-v" id="idx-v">2,00%</span>
+    </div>
+    <canvas id="cashflowChart" height="260" role="img" aria-label="Line chart of the monthly net cash position over the fixed period, gross gap and after tax. Figures are in the table below."></canvas>
+    <div class="legend"><span data-i18n-html="mm_legend_gross"><i class="sw" style="background:var(--slate)"></i>Gross gap (cash in minus out)</span><span data-i18n-html="mm_legend_aftertax"><i class="sw" style="background:var(--teal)"></i>After tax</span></div>
+    <div class="hint" data-i18n="hint_cf">Tip: hover (or tap) any year for the exact monthly figures.</div>
+    <div class="note" id="cf-summary"></div>
+    <div class="sr-only" id="sr-cf"></div>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="mm_split_h">📊 What your payment buys each year</h2>
+    <p class="sub" data-i18n="mm_split_sub">Interest (the cost of the loan) shrinks every year; principal (what you keep) grows.</p>
+    <canvas id="splitChart" height="320" role="img" aria-label="Bar chart of monthly interest versus principal for each year of the fixed period. Full figures are in the table below."></canvas>
+    <div class="legend"><span data-i18n-html="mm_legend_int"><i class="sw" style="background:var(--slate)"></i>Interest</span><span data-i18n-html="mm_legend_principal"><i class="sw" style="background:var(--teal)"></i>Principal (your equity)</span></div>
+    <div class="hint" data-i18n="hint_split">Tip: hover (or tap) any year to see the exact euro amounts.</div>
+    <div class="sr-only" id="sr-split"></div>
+  </div>
+</div>
+
+<!-- ============ OVERPAY ============ -->
+<div class="pane" id="tab-overpay" role="tabpanel" aria-labelledby="tb-overpay" tabindex="0">
+  <div class="card">
+    <h2 data-i18n-html="ov_h">⚡ What if I overpay each year? <span class="gl" tabindex="0" title="Sondertilgung: an extra repayment on top of your normal rate, often penalty-free up to an annual cap.">(Sondertilgung)</span></h2>
+    <p class="sub" id="ov-sub" data-i18n="ov_sub">Extra payments shrink your balance at the refinancing point and clear the loan years sooner. This model assumes you pay each January and the rate stays fixed for comparison.</p>
+    <div class="sl-row">
+      <span class="sl-edge">0 &euro;</span>
+      <input type="range" id="ssl" min="0" max="15000" step="250" value="1500" aria-label="Annual overpayment in euros">
+      <span class="sl-edge" id="ov-max">15.000 &euro;</span>
+      <input type="number" id="snum" min="0" max="15000" step="250" value="1500" aria-label="Annual overpayment in euros">
+    </div>
+    <div id="oneoff-wrap" style="margin-top:12px;border-top:1px solid var(--grid);padding-top:10px">
+      <div class="b" style="color:var(--navy)" data-i18n-html="ov_oneoff_h">One-off extra payments <span class="gl" tabindex="0" title="Lump sums you pay once, in a specific month: a bonus, savings, or an inheritance. They apply on top of the annual amount and also count toward your yearly Sondertilgung allowance.">(bonuses, savings)</span></div>
+      <p class="sub" style="margin:2px 0 8px" data-i18n="ov_oneoff_sub">Add specific lump sums in the month you expect to pay them. They apply on top of the annual amount above.</p>
+      <div id="oneoff-list"></div>
+      <button class="wbtn sec" id="oneoff-add" style="padding:5px 10px" data-i18n="ov_oneoff_add">+ Add a one-off payment</button>
+      <div class="note warn" id="oneoff-warn" style="display:none;margin-top:8px"></div>
+    </div>
+    <button class="info-btn" id="help-open" style="margin-top:10px" data-i18n="ov_help_btn">ℹ️ How does overpaying work? (plain-English explainer)</button>
+    <div class="twin">
+      <div class="tw" data-i18n-title="ov_tw_int_t" title="Total interest avoided over the whole life of the loan, assuming the fixed rate continues."><div class="tn" style="color:var(--teal)" id="o-intsaved">0 &euro;</div><div class="tl" data-i18n="ov_tw_int_l">interest saved, full life of the loan &nbsp;ⓘ</div></div>
+      <div class="tw" data-i18n-title="ov_tw_yrs_t" title="How much earlier the loan is fully paid off, compared with never overpaying."><div class="tn" style="color:var(--blue)" id="o-yrs">0</div><div class="tl" data-i18n="ov_tw_yrs_l">sooner you are debt-free &nbsp;ⓘ</div></div>
+    </div>
+    <div class="scen">
+      <div class="sc base">
+        <div class="sl" data-i18n="ov_scA_sl">Scenario A: don't overpay</div>
+        <div class="rr"><span data-i18n="ov_owe_fix">Owe at end of fixed period</span><b id="a-bal">226.749 &euro;</b></div>
+        <div class="rr"><span data-i18n="ov_totint">Total interest (to payoff)</span><b id="a-int">0 &euro;</b></div>
+        <div class="rr"><span data-i18n="ov_cleared">Loan cleared</span><b id="a-pay">2057</b></div>
+      </div>
+      <div class="sc opt">
+        <div class="sl" style="color:var(--teal)" data-i18n-html="ov_scB_sl">Scenario B: overpay <span id="b-amt">1.500</span> &euro;/yr</div>
+        <div class="rr"><span data-i18n="ov_owe_fix">Owe at end of fixed period</span><b id="b-bal">0 &euro;</b></div>
+        <div class="rr"><span data-i18n="ov_totint">Total interest (to payoff)</span><b id="b-int">0 &euro;</b></div>
+        <div class="rr"><span data-i18n="ov_cleared">Loan cleared</span><b id="b-pay">0</b></div>
+      </div>
+    </div>
+    <div class="note good" id="o-takeaway">Drag the slider to see the effect.</div>
+    <canvas id="overChart" height="230" style="margin-top:6px" role="img" aria-label="Line chart comparing the loan balance with and without overpaying. Full figures are in the table below."></canvas>
+    <div class="legend"><span data-i18n-html="ov_legend_without"><i class="sw" style="background:var(--slate)"></i>Without overpaying</span><span data-i18n-html="ov_legend_with"><i class="sw" style="background:var(--teal)"></i>With overpaying</span></div>
+    <div class="hint" data-i18n="hint_over">Tip: hover (or tap) any year to compare both balances.</div>
+    <div class="sr-only" id="sr-over"></div>
+  </div>
+</div>
+
+<!-- ============ REFINANCE PLAN ============ -->
+<div class="pane" id="tab-plan2035" role="tabpanel" aria-labelledby="tb-plan2035" tabindex="0">
+  <div class="card">
+    <h2 id="rf-title">📅 After your fixed rate ends: a projection</h2>
+    <div style="display:inline-block;background:var(--gold);color:#3a2b00;font-weight:700;font-size:.7rem;letter-spacing:.02em;padding:3px 9px;border-radius:6px;margin-bottom:8px" data-i18n="rf_badge">PROJECTION &middot; assumption only, not a guaranteed rate</div>
+    <p class="sub" id="rf-sub" data-i18n-html="rf_sub">Your fixed rate runs to <b id="rf-fixend">2035</b>, when you will still owe about <b><span id="rf-owe">226.749 &euro;</span></b>. You then agree a follow-on loan at a new rate <b>nobody can know today</b>. So this is a projection: by default it assumes today's rate simply continues. Drag the rate to stress-test good and bad cases.</p>
+    <div class="sl-row">
+      <span class="sl-edge">1%</span>
+      <input type="range" id="rsl" min="1" max="9" step="0.1" value="3.80" aria-label="Projected follow-on interest rate, percent">
+      <span class="sl-edge">9%</span>
+      <span class="sl-v" id="rsl-v">3,80%</span>
+    </div>
+    <div id="rate-presets" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+      <button class="wbtn sec" data-rate="same" style="padding:5px 10px" data-i18n="rf_preset_same">Same as now</button>
+      <button class="wbtn sec" data-rate="5" style="padding:5px 10px" data-i18n="rf_preset_5">5%</button>
+      <button class="wbtn sec" data-rate="6" style="padding:5px 10px" data-i18n="rf_preset_6">6% (worse)</button>
+      <button class="wbtn sec" data-rate="8" style="padding:5px 10px" data-i18n="rf_preset_8">8% (stress)</button>
+    </div>
+    <div class="g2" style="margin-top:8px">
+      <div class="tw"><div class="tn" id="r-pay" style="color:var(--navy)">~1.428 &euro;</div><div class="tl" data-i18n="rf_tw_pay_l">projected payment after handover</div></div>
+      <div class="tw"><div class="tn" id="r-delta" style="color:var(--red)">+41 &euro;</div><div class="tl" data-i18n="rf_tw_delta_l">vs today's payment</div></div>
+    </div>
+    <div class="note risk" id="rf-note" data-i18n-html="rf_note"><b>Do not sleepwalk into it.</b> If you do nothing, the loan can auto-roll to a variable rate. Shop the market ~6 months before, and consider a forward loan ~18 months out.</div>
+    <canvas id="rateChart" height="210" role="img" aria-label="Bar chart comparing today's payment, your new-rate payment, and the do-nothing fallback. Figures in the table below."></canvas>
+    <div class="legend"><span data-i18n-html="rf_legend_today"><i class="sw" style="background:var(--teal)"></i>Today</span><span data-i18n-html="rf_legend_newrate"><i class="sw" style="background:var(--blue)"></i>Your new rate</span><span data-i18n-html="rf_legend_fallback"><i class="sw" style="background:var(--red)"></i>Do-nothing fallback</span></div>
+    <div class="sr-only" id="sr-rate"></div>
+  </div>
+  <div class="card" id="refi-card">
+    <h2 data-i18n-html="rf_two_h">🔁 The two rate periods <span class="gl" tabindex="0" title="A German mortgage runs in rate periods: the Sollzinsbindung (your locked fixed period) and then the Anschlussfinanzierung (the follow-on loan at a new rate when the fixed period ends).">(Sollzinsbindung + Anschluss)</span></h2>
+    <p class="sub" data-i18n="rf_two_sub">A German mortgage runs in two rate periods: your current <b>fixed period</b> at a locked rate, then a <b>follow-on period</b> at a future rate. Adjust the current term as-is and project the follow-on; the payoff and lifetime-interest figures across the app update with it.</p>
+    <div class="g2">
+      <div class="field"><label for="refi-cur" data-i18n="refi_cur_l">Current fixed rate (%, your contract)</label><input type="number" id="refi-cur" step="0.01" min="0"></div>
+      <div class="field"><label for="refi-rate" data-i18n="refi_rate_l">Projected follow-on rate (%)</label><input type="number" id="refi-rate" step="0.01" min="0"></div>
+      <div class="field"><label for="refi-end" data-i18n="refi_end_l">Follow-on fully repaid by (year)</label><input type="number" id="refi-end" step="1"></div>
+      <div class="field"><label for="refi-pay" data-i18n="refi_pay_l">Follow-on payment (&euro;, blank = auto)</label><input type="number" id="refi-pay" step="1" min="0" placeholder="auto"></div>
+    </div>
+    <div class="fh" data-i18n="refi_fh">Changing the current rate recomputes your monthly payment. The follow-on rate is a projection; leave it equal to your current rate to assume it continues.</div>
+    <div class="twin" style="margin-top:8px">
+      <div class="tw"><div class="tn" id="refi-r-pay" style="color:var(--navy)">-</div><div class="tl" data-i18n="rf_tw_pay_l">projected payment after handover</div></div>
+      <div class="tw"><div class="tn" id="refi-r-payoff" style="color:var(--blue)">-</div><div class="tl" data-i18n="refi_tw_payoff_l">projected payoff year</div></div>
+    </div>
+    <div class="note" id="refi-summary"></div>
+    <div style="margin-top:12px">
+      <div class="b" style="color:var(--navy)" data-i18n="refi_scen_h">Scenario comparison: good vs worse case</div>
+      <p class="sub" style="margin:2px 0 6px" data-i18n="refi_scen_sub">Lifetime interest and payoff at different follow-on rates, on your current overpay plan.</p>
+      <table class="sens"><thead><tr><th data-i18n="refi_scen_th1">Follow-on rate</th><th class="tnum" data-i18n="refi_scen_th2">Payoff</th><th class="tnum" data-i18n="refi_scen_th3">Total interest (life)</th><th class="tnum" data-i18n="refi_scen_th4">vs rate continuing</th></tr></thead><tbody id="refi-scen"></tbody></table>
+    </div>
+    <button class="wbtn sec" id="refi-reset" style="margin-top:10px;padding:5px 10px" data-i18n="refi_reset">Reset to contract (assume current rate continues)</button>
+  </div>
+  <div class="card">
+    <h2 data-i18n="rf_bal_h">📉 Balance to the refinancing point</h2>
+    <p class="sub" data-i18n="rf_bal_sub">Your balance falls slowly early on because most of the early payment is interest. Every overpayment lowers the marker.</p>
+    <canvas id="balChart" height="230" role="img" aria-label="Line chart of the loan balance falling to the end of the fixed period. Figures in the table below."></canvas>
+    <div class="hint" data-i18n="hint_bal">Tip: hover (or tap) any year to see what you still owe.</div>
+    <div class="sr-only" id="sr-bal"></div>
+  </div>
+</div>
+
+<!-- ============ TAX ============ -->
+<div class="pane" id="tab-tax" role="tabpanel" aria-labelledby="tb-tax" tabindex="0">
+  <div class="card">
+    <h2 data-i18n="tx_h">🧮 How much tax do I get back?</h2>
+    <p class="sub" data-i18n-html="tx_sub">As a rental, your costs offset rental income. The "loss" reduces your other taxable income. Set your <span class="gl" tabindex="0" title="Marginal rate: tax on your top slice of income.">marginal tax rate</span> below:</p>
+    <div class="sl-row">
+      <span class="sl-edge">30%</span>
+      <input type="range" id="tsl2" min="30" max="45" step="1" value="42" aria-label="Marginal tax rate, percent">
+      <span class="sl-edge">45%</span>
+      <span class="sl-v" id="tsl2-v">42,00%</span>
+    </div>
+    <div class="g2" style="margin-top:8px">
+      <div>
+        <div class="row"><span class="l" data-i18n="tx_income">Rental income (cold rent x12)</span><span class="v in" id="t-income">+13.200 &euro;</span></div>
+        <div class="row"><span class="l" data-i18n="tx_ded">Total deductions</span><span class="v out" id="t-ded">-19.965 &euro;</span></div>
+        <div class="row"><span class="l" data-i18n="tx_res">Net rental result</span><span class="v out" id="t-res">-6.765 &euro;</span></div>
+        <div class="row"><span class="l" data-i18n="tx_save">Annual tax saving</span><span class="v in" id="t-save">+2.841 &euro;</span></div>
+        <div class="row tot"><span class="l b" data-i18n="tx_mo">Monthly tax benefit</span><span class="v in" id="t-mo">+237 &euro;</span></div>
+      </div>
+      <div>
+        <div class="note" data-i18n-html="tx_note">The income figure is the <b>cold rent only</b>. The Nebenkosten the tenant prepays is left out, because it is matched by deductible utility costs and nets to roughly zero.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="tx_wk_h">🧾 Deductible costs (Werbungskosten)</h2>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th data-i18n="tx_th_item">Item</th><th class="tnum" data-i18n="tx_th_year">Per year</th></tr></thead>
+      <tbody>
+        <tr><td data-i18n="tx_int">Mortgage interest</td><td class="tnum" id="td-int">11.305 &euro;</td></tr>
+        <tr><td data-i18n="tx_afa">Depreciation (AfA)</td><td class="tnum" id="td-afa">4.800 &euro;</td></tr>
+        <tr><td data-i18n="tx_hg">Service charge, operating part</td><td class="tnum" id="td-hg">~3.000 &euro;</td></tr>
+        <tr><td data-i18n="tx_sev_row">Management fee</td><td class="tnum" id="td-sev">360 &euro;</td></tr>
+        <tr><td data-i18n="tx_gr">Property tax (Grundsteuer)</td><td class="tnum" id="td-gr">~300 &euro;</td></tr>
+        <tr><td data-i18n="tx_other">Other (bank, travel, software)</td><td class="tnum" id="td-other">~200 &euro;</td></tr>
+        <tr class="hl"><td><b data-i18n="tx_total">Total, recurring per year</b></td><td class="tnum b" id="td-total">~19.965 &euro;</td></tr>
+        <tr><td><span data-i18n="tx_fin">Financing setup, Grundschuld</span> <span class="muted-xs" data-i18n="tx_firstyear">first year only</span></td><td class="tnum" id="td-fin">500 &euro;</td></tr>
+        <tr class="hl"><td><b data-i18n="tx_total_y1">First-year total (incl. one-off)</b></td><td class="tnum b" id="td-total-y1">~20.465 &euro;</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="sub" id="td-fin-note" data-i18n-html="tx_fin_note">The financing setup cost (Grundschuld registration and related Geldbeschaffungskosten) is deductible in full in the first rental year only, unlike the purchase-side fees that go into the depreciation base. At your marginal rate that is a one-time saving of about <b><span id="td-fin-save">210 &euro;</span></b>. <a class="cite" href="https://www.gesetze-im-internet.de/estg/__9.html" target="_blank" rel="noopener">&sect;9 EStG &uarr;</a></p>
+  </div>
+
+  <div data-de>
+  <div class="card">
+    <h2 data-i18n-html="tx_claim_h">🧴 What everyday things can I claim? <span class="muted-xs">(German rules)</span></h2>
+    <p class="sub" data-i18n-html="tx_claim_sub">A cost is deductible only if it is <span class="gl" tabindex="0" title="Veranlassungsprinzip: the expense must be caused by the rental, not your own home.">caused by the rental</span> AND a cost you actually bear. Repairs and upkeep are "Erhaltungsaufwand", deducted in full in the year you pay. <a class="cite" href="https://www.gesetze-im-internet.de/estg/__9.html" target="_blank" rel="noopener">§9 EStG ↗</a></p>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th data-i18n="tx_claim_th1">Everyday item</th><th data-i18n="tx_claim_th2">Claim?</th><th data-i18n="tx_claim_th3">Why</th></tr></thead>
+      <tbody>
+        <tr><td data-i18n="tx_cr1_i">Schimmelspray, cleaning &amp; small-repair materials used in the flat</td><td><span class="pill g" data-i18n="tx_cr1_p">Yes</span></td><td data-i18n="tx_cr1_w">Landlord-side cleaning/repair to keep it lettable = Erhaltungsaufwand, full deduction that year</td></tr>
+        <tr><td data-i18n="tx_cr2_i">Paint, sealant, fittings, minor repairs</td><td><span class="pill g" data-i18n="tx_cr2_p">Yes</span></td><td data-i18n="tx_cr2_w">Repair material for the let</td></tr>
+        <tr><td data-i18n="tx_cr3_i">Rauchmelder (smoke detectors), small appliances</td><td><span class="pill g" data-i18n="tx_cr3_p">Yes</span></td><td data-i18n="tx_cr3_w">A unit under 800 € net writes off immediately (GWG)</td></tr>
+        <tr><td data-i18n="tx_cr4_i">Toilet paper, soap, in-flat bulbs during tenancy (unfurnished)</td><td><span class="pill r" data-i18n="tx_cr4_p">No</span></td><td data-i18n="tx_cr4_w">The tenant lives there and buys their own consumables, not your cost</td></tr>
+        <tr><td data-i18n="tx_cr5_i">The same, in a furnished / holiday let you supply</td><td><span class="pill g" data-i18n="tx_cr5_p">Yes</span></td><td data-i18n="tx_cr5_w">When you provide them as part of a furnished let</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="note" data-i18n-html="tx_claim_note">Examples: <b>Schimmelspray = yes</b> (used on the rented flat); <b>toilet paper = no</b> for a normal unfurnished let, that is the tenant's own cost. Keep the receipt either way.</div>
+    <p class="b" style="margin-top:14px;color:var(--navy)" data-i18n="tx_rulings_h">Recent &amp; leading court rulings</p>
+    <div class="tbl-wrap">
+    <table><tbody>
+      <tr><td><b>BFH IX R 19/24</b> (14.01.2025)</td><td data-i18n-html="tx_rule1">WEG maintenance reserve is deductible only when actually <b>spent</b>. <a class="cite" href="https://www.bundesfinanzhof.de/en/entscheidungen/entscheidungen-online/decision-detail/STRE202510025/" target="_blank" rel="noopener">↗</a></td></tr>
+      <tr><td><b>BFH IX R 26/19</b> (2020)</td><td data-i18n-html="tx_rule2">A contract's land/building split binds unless economically untenable. <a class="cite" href="https://www.bundesfinanzhof.de/en/entscheidungen/entscheidungen-online/decision-detail/STRE202010257/" target="_blank" rel="noopener">↗</a></td></tr>
+      <tr><td><b>BFH IX R 25/14</b> (2016)</td><td data-i18n-html="tx_rule3">Even cosmetic Schönheitsreparaturen count toward the 15% 3-year limit. <a class="cite" href="https://www.bundesfinanzhof.de/en/entscheidungen/entscheidungen-online/decision-detail/STRE201610204/" target="_blank" rel="noopener">↗</a></td></tr>
+    </tbody></table>
+    </div>
+    <div class="note good" data-i18n-html="tx_pitfalls"><b>Pitfalls:</b> (1) the <b>15% trap</b> in the first 3 years (below). (2) Spread big repair bills over 2 to 5 years (§82b EStDV). (3) Items under 800 € net write off immediately. (4) Pay non-cash, keep receipts made out to you. (5) Don't pad the return with tenant consumables.</div>
+    <p class="sub" style="margin-top:6px" data-i18n="tx_claim_foot">General guidance, not individual advice; confirm with your Steuerberater.</p>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="tx_wins_h">💡 Two tax wins worth chasing</h2>
+    <div class="note good" data-i18n-html="tx_win1"><b>Fitted kitchen over 10 years, not 50.</b> A complete Einbauküche can be depreciated over ~10 years instead of with the building over 50. <a class="cite" href="https://www.bundesfinanzhof.de/en/entscheidungen/entscheidungen-online/decision-detail/STRE201610271/" target="_blank" rel="noopener">BFH IX R 14/15 ↗</a></div>
+    <div class="note good" data-i18n-html="tx_win2"><b>Split the notary bill.</b> The Grundschuld portion plus its registration is immediately deductible as a financing cost, unlike the purchase-related fees. <a class="cite" href="https://www.buhl.de/steuer/ratgeber/notarkosten-absetzen/" target="_blank" rel="noopener">Buhl ↗</a></div>
+  </div>
+  </div>
+
+  <div class="card">
+    <h2>⏱️ <span id="reno-title" data-i18n="tx_reno_title">15% renovation limit (first 3 years)</span></h2>
+    <div class="row"><span class="l" data-i18n-html="tx_reno_limit_l"><span class="gl" tabindex="0" title="anschaffungsnahe Herstellungskosten: renovation within 3 years of purchase above 15% of the building value must be depreciated, not deducted immediately.">Limit</span> on early renovation</span><span class="v" style="color:var(--red)" id="reno-limit-v">33.600,00 &euro;</span></div>
+    <div class="row"><span class="l" data-i18n="tx_reno_window_l">Window</span><span class="v" id="reno-window">first 3 years</span></div>
+    <div class="row"><span class="l" data-i18n="tx_reno_spent_l">Spent so far (net , you enter this, saved on this device)</span><span class="v"><input type="number" id="reno" min="0" step="100" value="0" aria-label="Renovation spent so far, net euros" style="width:120px"> &euro;</span></div>
+    <div class="row"><span class="l" data-i18n="tx_reno_left_l">Remaining headroom</span><span class="v" id="reno-left">33.600 &euro;</span></div>
+    <div class="prog"><div class="fill" id="reno-fill" style="width:0%"></div></div>
+    <div class="muted-xs" id="reno-pct">0 € used (0%)</div>
+    <div class="note warn" id="reno-note">Keep cumulative renovation spend under the limit (net) in the first 3 years to keep it immediately deductible.</div>
+  </div>
+</div>
+
+<!-- ============ SELL & PROFIT ============ -->
+<div class="pane" id="tab-sale" role="tabpanel" aria-labelledby="tb-sale" tabindex="0">
+  <div class="card">
+    <h2 id="sale-title" data-i18n="sale_title">🏡 Sell after 10 years?</h2>
+    <p class="sub" id="sale-intro" data-i18n="sale_intro">A what-if, not a plan. In many places a privately-held property sold more than 10 years after purchase has a tax-free gain.</p>
+    <p class="sub" data-i18n-html="sale_base_sub">Yearly price growth, applied to your <b><span id="sale-base">320.000 &euro;</span> purchase price</b> (one-off buying costs are counted separately, not appreciated):</p>
+    <div class="sl-row">
+      <span class="sl-edge">0%</span>
+      <input type="range" id="apr" min="0" max="6" step="0.1" value="2" aria-label="Assumed yearly property appreciation, percent">
+      <span class="sl-edge">6%</span>
+      <span class="sl-v" id="apr-v">2,00%</span>
+    </div>
+    <div class="tw" style="margin:14px 0"><div class="tn" id="sale-profit" style="color:var(--teal);font-size:2.2rem">~85.000 &euro;</div><div class="tl" id="sale-profit-l">profit if you sold after 10 years</div></div>
+    <div class="twin">
+      <div class="tw"><div class="tn" id="s-worth" style="font-size:1.4rem;color:var(--navy)">~390.000 &euro;</div><div class="tl" data-i18n="sale_worth_l">what it is worth then</div></div>
+      <div class="tw"><div class="tn" id="s-loan" style="font-size:1.4rem;color:var(--navy)">~210.000 &euro;</div><div class="tl" data-i18n="sale_loan_l">mortgage still owed</div></div>
+    </div>
+    <div class="twin" style="margin-top:12px">
+      <div class="tw"><div class="tn" id="s-equity" style="font-size:1.4rem;color:var(--teal)">~180.000 &euro;</div><div class="tl" data-i18n="sale_equity_l">your equity (worth minus loan)</div></div>
+      <div class="tw"><div class="tn" id="s-in" style="font-size:1.4rem;color:var(--navy)">~95.000 &euro;</div><div class="tl" data-i18n="sale_in_l">total cash you've put in</div></div>
+    </div>
+    <p class="b" style="margin-top:16px;color:var(--navy)" data-i18n="sale_where_h">Where the sale money goes</p>
+    <div class="sbar">
+      <div id="sb-loan" style="background:var(--slate)"></div>
+      <div id="sb-cost" style="background:var(--gold)"></div>
+      <div id="sb-net" style="background:var(--teal)"></div>
+    </div>
+    <div class="legend"><span data-i18n-html="sale_legend_loan"><i class="sw" style="background:var(--slate)"></i>Mortgage repaid</span><span data-i18n-html="sale_legend_cost"><i class="sw" style="background:var(--gold)"></i>Selling costs</span><span data-i18n-html="sale_legend_net"><i class="sw" style="background:var(--teal)"></i>Net cash to you</span></div>
+    <div class="tbl-wrap" style="margin-top:12px">
+    <table><tbody>
+      <tr><td data-i18n="sale_br1">Sale price (at your appreciation, 10 yrs)</td><td class="tnum in" id="br-sale">+390.000 &euro;</td></tr>
+      <tr><td data-i18n="sale_br2">Less selling costs</td><td class="tnum out" id="br-cost">-13.900 &euro;</td></tr>
+      <tr><td data-i18n="sale_br3">Less mortgage still owed</td><td class="tnum out" id="br-loan">-210.000 &euro;</td></tr>
+      <tr class="hl"><td><b data-i18n="sale_br_net">Net cash from the sale</b></td><td class="tnum b" id="br-net">166.000 &euro;</td></tr>
+      <tr><td data-i18n="sale_br_in">Less total cash you put in</td><td class="tnum out" id="br-in">-95.000 &euro;</td></tr>
+      <tr class="hl"><td><b data-i18n="sale_br_profit">Profit</b></td><td class="tnum b" id="br-profit" style="color:var(--teal)">85.000 &euro;</td></tr>
+    </tbody></table>
+    </div>
+    <p class="b" style="margin-top:14px;color:var(--navy)" data-i18n="sale_sens_h">Profit at different appreciation rates</p>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th data-i18n="sale_sens_th1">Appreciation/yr</th><th class="tnum" data-i18n="sale_sens_th2">Worth in 10 yrs</th><th class="tnum" data-i18n="sale_sens_th3">Profit</th></tr></thead>
+      <tbody id="sens-body"></tbody>
+    </table>
+    </div>
+    <div class="note good" data-i18n-html="sale_note">Even at <b>0% appreciation</b> you can still profit, because your <b>tenant pays down the loan</b>. Any real price growth is upside on top.</div>
+  </div>
+
+  <div class="card" data-de>
+    <h2 data-i18n="sale_de_h">🇩🇪 The 10-year tax-free sale (Germany)</h2>
+    <div class="note" data-i18n-html="sale_de_note">A privately-held rental sold <b>more than 10 years after purchase</b> has a <b>tax-free</b> gain (§23 EStG). The clock starts at the notary purchase date. <a class="cite" href="https://www.gesetze-im-internet.de/estg/__23.html" target="_blank" rel="noopener">§23 EStG ↗</a></div>
+    <ul style="margin:6px 0 0 18px;font-size:.86rem;line-height:1.65">
+      <li data-i18n-html="sale_de_li1"><b>Sell just past the 10-year line</b> and past the fixed-rate end, so the whole gain is tax-free and there is no early-repayment penalty.</li>
+      <li data-i18n-html="sale_de_li2"><b>Sell within 10 years instead</b> and the gain is taxed at your marginal rate, with claimed depreciation added back.</li>
+      <li data-i18n-html="sale_de_li3"><b>One property sold once = private.</b> Avoid selling more than 3 in 5 years.</li>
+      <li data-i18n="sale_de_li4">⚠️ Confirm the exact tax-free date with your Steuerberater before signing.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============ FACTS ============ -->
+<div class="pane" id="tab-facts" role="tabpanel" aria-labelledby="tb-facts" tabindex="0">
+  <div class="card">
+    <h2 data-i18n="facts_h">📜 Key conditions</h2>
+    <div class="row"><span class="l" data-i18n="f_loan_l">Loan amount</span><span class="v" id="f-loan">300.000 &euro;</span></div>
+    <div class="row"><span class="l" data-i18n="f_rate_l">Fixed rate (Sollzins)</span><span class="v" id="f-rate">3,80%</span></div>
+    <div class="row"><span class="l" data-i18n-html="f_eff_l">Effective rate <span class="gl" tabindex="0" title="The effective annual rate derived by compounding the nominal Sollzins monthly: (1+Sollzins/12)^12-1. It is computed, never entered. Your contract's disclosed Effektivzins can be slightly higher because it also folds in one-off fees.">(p.a., derived)</span></span><span class="v" id="f-eff">3,87%</span></div>
+    <div class="row"><span class="l" data-i18n="f_fixed_l">Fixed until</span><span class="v" id="f-fixed">end 2035</span></div>
+    <div class="row"><span class="l" data-i18n="f_pay_l">Monthly payment</span><span class="v" id="f-pay">1.397,87 &euro;</span></div>
+    <div class="row"><span class="l" data-i18n="f_sonder_l">Overpayment allowance</span><span class="v" id="f-sonder">15.000 &euro;/yr</span></div>
+    <div class="row"><span class="l" data-i18n="f_price_l">Purchase price</span><span class="v" id="f-price">320.000 &euro;</span></div>
+  </div>
+  <div class="card" id="facts-contacts" data-de>
+    <h2 data-i18n="facts_contacts_h">🏦 Contacts &amp; account</h2>
+    <div id="f-contacts"></div>
+  </div>
+  <div class="card" data-de>
+    <h2 data-i18n="facts_gs_h">ℹ️ Good to know: the 15% Grundschuldzins</h2>
+    <div class="note" data-i18n-html="facts_gs_note">A German <span class="gl" tabindex="0" title="Grundschuld: the bank's registered claim against the property, the security for the loan.">Grundschuld</span> carries a high notarial interest figure (12 to 18%). This is <b>not your rate and is never billed</b>; it is a routine security ceiling that only matters in a forced sale. Nothing to act on.</div>
+  </div>
+  <div class="card hide" id="facts-generic-note">
+    <div class="note" data-i18n-html="facts_generic_note">Country-specific tax and legal guidance is shown for German properties. For this property, the calculator still works; the tax figures use the marginal rate and deductions you entered.</div>
+  </div>
+</div>
+
+<p class="foot" data-i18n-html="foot">Open-source demo by <a href="https://github.com/RealMattMurdoch" target="_blank" rel="noopener">RealMattMurdoch</a>. Illustrative figures only, not financial or tax advice. Each property is saved only in your browser on this device. Developers: add <code>?test</code> to run the built-in self-tests.</p>
+
+</div>
+
+<!-- explainer drawer -->
+<div class="drawer-ov" id="helpov"></div>
+<div class="drawer" id="helpdr" role="dialog" aria-label="How overpaying works" aria-modal="false">
+  <button class="x" id="help-close" aria-label="Close">&times;</button>
+  <h2 data-i18n="help_h">⚡ How overpaying works</h2>
+  <p data-i18n="help_p1">Think of an overpayment as a savings account paying your mortgage rate, except the money lowers your loan instead of sitting in an account. You stop paying interest on the part you cleared.</p>
+  <div class="step"><div class="n">1</div><div data-i18n="help_s1">Every 1.000 € you overpay saves your interest rate on that amount, every year, until the loan is gone.</div></div>
+  <div class="step"><div class="n">2</div><div data-i18n-html="help_s2"><b>It compounds:</b> a smaller balance means less interest next year too.</div></div>
+  <div class="step"><div class="n">3</div><div data-i18n-html="help_s3"><b>After tax</b> the benefit is smaller, because mortgage interest is tax-deductible; you give up a little deduction. Still a guaranteed, risk-free return.</div></div>
+  <div class="note good" style="margin-top:16px" data-i18n-html="help_box">At your current <b id="h-amt">1.500 €</b> per year:<br>
+    <div style="margin:8px 0"><span class="big2" id="h-y1">~63 €</span> <span class="muted-xs">interest saved in year one (<span id="h-y1at">~36 € after tax</span>)</span></div>
+    Saved by the end of the fixed period: <b id="h-2035">~?</b><br>
+    Loan cleared <b id="h-yrs">? sooner</b>
+  </div>
+  <div class="note warn" data-i18n-html="help_warn">The trade-off: this cash is <b>locked into the property</b> until you sell or refinance. Keep a reserve first.</div>
+</div>
+
+<!-- wizard / manage / import drawer -->
+<div class="drawer-ov" id="wzov"></div>
+<div class="drawer" id="wzdr" role="dialog" aria-label="Property setup" aria-modal="false">
+  <button class="x" id="wz-close" aria-label="Close">&times;</button>
+  <h2 id="wz-h">Add a property</h2>
+  <div class="wprog"><div id="wz-bar" style="width:14%"></div></div>
+  <div id="wz-body"></div>
+  <div class="wnav">
+    <button class="wbtn sec" id="wz-back" data-i18n="wz_back">Back</button>
+    <div style="flex:1"></div>
+    <button class="wbtn sec" id="wz-savefin" data-i18n="wz_savefin">Save &amp; finish</button>
+    <button class="wbtn pri" id="wz-next">Continue</button>
+  </div>
+</div>
+
+<div class="drawer-ov" id="mgov"></div>
+<div class="drawer" id="mgdr" role="dialog" aria-label="Edit values" aria-modal="false">
+  <button class="x" id="mg-close" aria-label="Close">&times;</button>
+  <h2 data-i18n="mg_h2">⚙ Edit values (effective-dated)</h2>
+  <p class="sub" data-i18n-html="mg_sub">Change a cost or the rent so it applies <b>from a chosen month onward</b>. History is kept. Saved on this device.</p>
+  <div id="mg-body"></div>
+  <div class="wnav"><div style="flex:1"></div><button class="wbtn pri" id="mg-save" data-i18n="mg_save">Save changes</button></div>
+</div>
+
+<input type="file" id="importfile" accept="application/json,.json" class="hide">
+
+<script>
+(function(){
+  'use strict';
+  var EPS=0.005, MAX_MONTHS=700, TAU=Math.PI*2;
+  function $(id){return document.getElementById(id);}
+  function eur(n){return Math.round(n).toLocaleString('de-DE')+' €';}
+  function eur2(n){return n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';}
+  function eurK(n){return Math.round(n/1000)+'k';}
+  function deNum(n){return Math.round(n).toLocaleString('de-DE');}
+  function deDec(n){return n.toFixed(1).replace('.',',');}
+  function deDec2(n){return n.toFixed(2).replace('.',',');}
+  function yearOfFrom(f){return parseInt(String(f).slice(0,4),10);}
+  function valueAt(series,D){var v=(series&&series.length)?series[0].value:0;if(series)for(var i=0;i<series.length;i++){if(series[i].from<=D)v=series[i].value;else break;}return v;}
+  function seriesGrownForYear(series,Y,g,ffs){var base=series[0];for(var i=0;i<series.length;i++){if(yearOfFrom(series[i].from)<=Y)base=series[i];}var anchor=(base===series[0])?(ffs-1):yearOfFrom(base.from);return base.value*Math.pow(1+g,Math.max(0,Y-anchor));}
+  function rentGrownForYear(P,Y,g){var ex=P.rent.explicit,base=ex[0];for(var i=0;i<ex.length;i++){if(yearOfFrom(ex[i].from)<=Y)base=ex[i];}var anchor=(base===ex[0])?(P.rent.firstFullStepYear-1):yearOfFrom(base.from);var f=Math.pow(1+g,Math.max(0,Y-anchor));return {cold:base.cold*f,warm:base.warm*f};}
+
+  // ===================== LOCALISATION (DE / EN) =====================
+  // The app is about German housing/credit/tax, so number format stays de-DE in BOTH languages.
+  // Only the words change. English is the default and is captured from the live DOM at startup
+  // (so it is guaranteed identical and the test suite stays byte-stable); German comes from I18N_DE.
+  var LOCALE_KEY='mpd:locale';
+  function getLocale(){try{return (localStorage.getItem(LOCALE_KEY)==='de')?'de':'en';}catch(e){return 'en';}}
+  function setLocale(v){LOCALE=(v==='de')?'de':'en';try{localStorage.setItem(LOCALE_KEY,LOCALE);}catch(e){}}
+  var LOCALE=getLocale();
+  var MONTHS_EN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var MONTHS_DE=['Jan.','Feb.','März','Apr.','Mai','Juni','Juli','Aug.','Sep.','Okt.','Nov.','Dez.'];
+
+  // ---- static markup: captured English defaults + the German dictionary ----
+  var I18N_EN={};
+  function captureEn(){
+    function cap(sel,prop,store){[].slice.call(document.querySelectorAll(sel)).forEach(function(el){I18N_EN[store+el.getAttribute(sel.replace(/^\[|\]$/g,''))]=( prop==='html'?el.innerHTML : prop==='text'?el.textContent : el.getAttribute(prop) );});}
+    cap('[data-i18n]','text','t:');
+    cap('[data-i18n-html]','html','h:');
+    cap('[data-i18n-title]','title','ti:');
+    cap('[data-i18n-aria]','aria-label','a:');
+    cap('[data-i18n-ph]','placeholder','p:');
+  }
+  function applyI18n(){
+    var de=(LOCALE==='de'),D=I18N_DE;
+    document.documentElement.lang=de?'de':'en';
+    function put(sel,attr,store,setter){[].slice.call(document.querySelectorAll(sel)).forEach(function(el){var k=el.getAttribute(attr);var v=de?((k in D)?D[k]:I18N_EN[store+k]):I18N_EN[store+k];if(v!=null)setter(el,v);});}
+    put('[data-i18n]','data-i18n','t:',function(el,v){el.textContent=v;});
+    put('[data-i18n-html]','data-i18n-html','h:',function(el,v){el.innerHTML=v;});
+    put('[data-i18n-title]','data-i18n-title','ti:',function(el,v){el.setAttribute('title',v);});
+    put('[data-i18n-aria]','data-i18n-aria','a:',function(el,v){el.setAttribute('aria-label',v);});
+    put('[data-i18n-ph]','data-i18n-ph','p:',function(el,v){el.setAttribute('placeholder',v);});
+    var lt=$('lang-toggle'); if(lt){lt.textContent=de?'EN':'DE';lt.setAttribute('aria-label',de?'Switch to English':'Auf Deutsch umstellen');}
+  }
+  function toggleLocale(){
+    setLocale(LOCALE==='de'?'en':'de');
+    applyI18n(); renderAllForActive();
+    if($('mgdr')&&$('mgdr').classList.contains('on'))renderManage();
+    if($('wzdr')&&$('wzdr').classList.contains('on'))renderWizard();
+  }
+
+  // German static strings, keyed to data-i18n attributes in the markup.
+  var I18N_DE={
+    // propbar + hero
+    pb_props:'Objekte', pb_add:'+ Objekt hinzufügen', pb_edit:'⚙ Werte bearbeiten',
+    pb_export:'⤓ Exportieren', pb_import:'⤒ Importieren', pb_delete:'Dieses Objekt löschen',
+    hero_q:'Was kostet mich dieses Objekt wirklich?',
+    hero_gross:'Brutto-Liquiditätslücke <span id="hero-gross">-378 &euro;</span>/Monat, gemindert durch Ihre Steuerersparnis. Schätzung, erstes volles Jahr.',
+    hero_owe:'Restschuld', hero_owe_s:'Stand heute (ca.)',
+    hero_eq:'Bisher getilgt', hero_eq_s:'getilgtes Kapital',
+    hero_date:'Nächster Stichtag', hero_allow:'Sondertilgungsrecht', hero_allow_s:'pro Jahr, ohne Vorfälligkeitsentschädigung',
+    hero_cta:'💡 <div><b>Jetzt erledigen:</b> beantragen Sie die <span class="gl" tabindex="0" title="Lohnsteuer-Ermäßigung: Ihr erwarteter Vermietungsverlust wird als Freibetrag eingetragen, sodass monatlich weniger Lohnsteuer einbehalten wird, statt auf die Jahreserklärung zu warten.">Lohnsteuer-Ermäßigung</span>, damit Ihre Steuerersparnis monatlich über das Gehalt ankommt und nicht erst über ein Jahr später mit der Steuererklärung.</div>',
+    // tabs
+    tab_money:'💶 Monatliche Kosten', tab_overpay:'⚡ Sondertilgung', tab_plan2035:'📅 Anschlussfinanzierung',
+    tab_tax:'🇩🇪 Steuer zurück', tab_sale:'🏡 Verkauf & Gewinn', tab_facts:'📋 Eckdaten',
+    // monthly money
+    mm_out_h:'📤 Was abfließt',
+    mm_mort:'Monatliche Rate', mm_mort_t:'Ihre feste monatliche Annuität: Zinsen + Tilgung.',
+    mm_hg:'Hausgeld', mm_sev:'SEV-Vergütung', mm_sev_note:'brutto',
+    mm_out_tot:'Summe Ausgaben', mm_in_h:'📥 Was hereinkommt',
+    mm_cold:'Kaltmiete', mm_cold_t:'Kaltmiete: die reine Miete ohne Betriebskosten.',
+    mm_bk:'Betriebskosten-Vorauszahlung', mm_hk:'Heizkosten-Vorauszahlung', mm_passthrough:'durchlaufender Posten',
+    mm_warm:'Warmmiete', mm_pos_h:'⚖️ Ihre tatsächliche monatliche Lage',
+    mm_warmout:'Warmmiete ein, Ausgaben gesamt', mm_tben:'Steuerersparnis', mm_aftertax:'Nach Steuer (netto)',
+    mm_marg_p:'<span class="gl" tabindex="0" title="Grenzsteuersatz: der Steuersatz auf den obersten Teil Ihres Einkommens. Er bestimmt, wie hoch Ihre Erstattung aus dem Vermietungsverlust ausfällt.">Ihr Grenzsteuersatz</span> (einmal einstellen, überall verwendet):',
+    mm_passnote:'Die vom Mieter vorausgezahlten Nebenkosten gehören nicht Ihnen, sie sind ein <span class="gl" tabindex="0" title="Durchlaufender Posten: vom Mieter eingezogen und dann für die tatsächlichen Betriebskosten ausgegeben. Über das Jahr gleicht sich das ungefähr aus.">durchlaufender Posten</span> für die tatsächlichen Betriebskosten. Die ehrliche Einnahme ist daher die <b>Kaltmiete</b>, nicht die Warmmiete.',
+    mm_forcenote:'Sie „verlieren" diese Lücke nicht. Ein großer Teil der Rate ist <b>Tilgung</b>, Sie sparen also zwangsweise Eigenkapital an, statt Geld zu verbrennen. Die Steuerersparnis deckt einen Großteil des Rests.',
+    mm_10y_h:'📈 Ihre nächsten 10 Jahre (Miete steigt mit der Inflation)',
+    mm_10y_sub:'Bei einer <span class="gl" tabindex="0" title="Indexmiete: an den Verbraucherpreisindex gekoppelte Miete, die per schriftlicher Mitteilung erhöht wird.">Indexmiete</span> kann die Miete mit dem Verbraucherpreisindex steigen, während Ihr Zins fest bleibt, sodass sich die monatliche Lücke mit der Zeit verringert. Ziehen Sie an der angenommenen Inflationsrate:',
+    mm_legend_gross:'<i class="sw" style="background:var(--slate)"></i>Brutto-Lücke (Einnahmen minus Ausgaben)',
+    mm_legend_aftertax:'<i class="sw" style="background:var(--teal)"></i>Nach Steuer',
+    hint_cf:'Tipp: Fahren Sie über ein Jahr (oder tippen Sie es an) für die genauen Monatswerte.',
+    mm_split_h:'📊 Was Ihre Rate jedes Jahr bewirkt',
+    mm_split_sub:'Die Zinsen (Kosten des Kredits) sinken jedes Jahr; die Tilgung (was Ihnen bleibt) steigt.',
+    mm_legend_int:'<i class="sw" style="background:var(--slate)"></i>Zinsen',
+    mm_legend_principal:'<i class="sw" style="background:var(--teal)"></i>Tilgung (Ihr Eigenkapital)',
+    hint_split:'Tipp: Fahren Sie über ein Jahr (oder tippen Sie es an) für die genauen Eurobeträge.',
+    // overpay
+    ov_h:'⚡ Was, wenn ich jedes Jahr sondertilge? <span class="gl" tabindex="0" title="Sondertilgung: eine zusätzliche Tilgung über die normale Rate hinaus, oft bis zu einem jährlichen Höchstbetrag ohne Vorfälligkeitsentschädigung.">(Sondertilgung)</span>',
+    ov_sub:'Zusätzliche Zahlungen senken Ihre Restschuld zum Anschluss und tilgen den Kredit Jahre früher. Das Modell nimmt an, dass Sie jeweils im Januar zahlen und der Zins zum Vergleich fest bleibt.',
+    ov_oneoff_h:'Einmalige Sonderzahlungen <span class="gl" tabindex="0" title="Beträge, die Sie einmalig in einem bestimmten Monat zahlen: Bonus, Erspartes oder eine Erbschaft. Sie kommen zur jährlichen Summe hinzu und zählen ebenfalls auf Ihr jährliches Sondertilgungsrecht an.">(Bonus, Erspartes)</span>',
+    ov_oneoff_sub:'Tragen Sie konkrete Beträge in dem Monat ein, in dem Sie sie voraussichtlich zahlen. Sie kommen zur jährlichen Summe oben hinzu.',
+    ov_oneoff_add:'+ Einmalzahlung hinzufügen',
+    ov_help_btn:'ℹ️ Wie funktioniert Sondertilgung? (einfach erklärt)',
+    ov_tw_int_l:'Zinsersparnis über die gesamte Laufzeit  ⓘ', ov_tw_int_t:'Über die gesamte Laufzeit vermiedene Zinsen, sofern der feste Zins fortbesteht.',
+    ov_tw_yrs_l:'früher schuldenfrei  ⓘ', ov_tw_yrs_t:'Wie viel früher der Kredit vollständig getilgt ist, verglichen mit keiner Sondertilgung.',
+    ov_scA_sl:'Szenario A: ohne Sondertilgung',
+    ov_owe_fix:'Restschuld am Ende der Zinsbindung', ov_totint:'Gesamtzinsen (bis Volltilgung)', ov_cleared:'Kredit getilgt',
+    ov_scB_sl:'Szenario B: Sondertilgung <span id="b-amt">1.500</span> &euro;/Jahr',
+    ov_legend_without:'<i class="sw" style="background:var(--slate)"></i>Ohne Sondertilgung',
+    ov_legend_with:'<i class="sw" style="background:var(--teal)"></i>Mit Sondertilgung',
+    hint_over:'Tipp: Fahren Sie über ein Jahr (oder tippen Sie es an), um beide Restschulden zu vergleichen.',
+    // refinance plan
+    rf_badge:'PROJEKTION · nur Annahme, kein garantierter Zinssatz',
+    rf_sub:'Ihr Sollzins läuft bis <b id="rf-fixend">2035</b>, dann schulden Sie noch etwa <b><span id="rf-owe">226.749 &euro;</span></b>. Sie vereinbaren dann eine Anschlussfinanzierung zu einem Zins, den <b>heute niemand kennen kann</b>. Dies ist also eine Projektion: standardmäßig wird angenommen, dass der heutige Zins einfach fortbesteht. Ziehen Sie am Zins, um gute und schlechte Fälle zu testen.',
+    rf_preset_same:'Wie heute', rf_preset_5:'5%', rf_preset_6:'6% (schlechter)', rf_preset_8:'8% (Stress)',
+    rf_tw_pay_l:'projizierte Rate nach Anschluss', rf_tw_delta_l:'vs. heutige Rate',
+    rf_note:'<b>Schlafwandeln Sie nicht hinein.</b> Wenn Sie nichts tun, kann der Kredit automatisch auf einen variablen Zins umschlagen. Vergleichen Sie den Markt ~6 Monate vorher und prüfen Sie ein Forward-Darlehen ~18 Monate vorher.',
+    rf_legend_today:'<i class="sw" style="background:var(--teal)"></i>Heute',
+    rf_legend_newrate:'<i class="sw" style="background:var(--blue)"></i>Ihr neuer Zins',
+    rf_legend_fallback:'<i class="sw" style="background:var(--red)"></i>Variabler Rückfall (Nichtstun)',
+    rf_two_h:'🔁 Die zwei Zinsphasen <span class="gl" tabindex="0" title="Ein deutsches Darlehen läuft in Zinsphasen: der Sollzinsbindung (Ihre feste Phase) und danach der Anschlussfinanzierung (das Folgedarlehen zu einem neuen Zins nach Ende der Bindung).">(Sollzinsbindung + Anschluss)</span>',
+    rf_two_sub:'Ein deutsches Darlehen läuft in zwei Zinsphasen: Ihre aktuelle <b>Zinsbindung</b> zu einem festen Satz, dann eine <b>Anschlussphase</b> zu einem künftigen Satz. Passen Sie die aktuelle Phase wie vereinbart an und projizieren Sie den Anschluss; die Tilgungs- und Zinswerte der App aktualisieren sich mit.',
+    refi_cur_l:'Aktueller Sollzins (%, Ihr Vertrag)', refi_rate_l:'Projizierter Anschlusszins (%)',
+    refi_end_l:'Anschluss vollständig getilgt bis (Jahr)', refi_pay_l:'Anschlussrate (&euro;, leer = automatisch)',
+    refi_fh:'Eine Änderung des aktuellen Zinses berechnet Ihre Monatsrate neu. Der Anschlusszins ist eine Projektion; lassen Sie ihn gleich dem aktuellen Zins, um Fortbestand anzunehmen.',
+    refi_tw_payoff_l:'projiziertes Tilgungsjahr',
+    refi_scen_h:'Szenarienvergleich: guter vs. schlechterer Fall',
+    refi_scen_sub:'Gesamtzinsen und Tilgung bei verschiedenen Anschlusszinsen, auf Basis Ihres aktuellen Sondertilgungsplans.',
+    refi_scen_th1:'Anschlusszins', refi_scen_th2:'Tilgung', refi_scen_th3:'Gesamtzinsen (Laufzeit)', refi_scen_th4:'vs. gleichbleibender Zins',
+    refi_reset:'Auf Vertrag zurücksetzen (heutigen Zins fortschreiben)',
+    rf_bal_h:'📉 Restschuld bis zum Anschluss',
+    rf_bal_sub:'Ihre Restschuld sinkt anfangs langsam, weil der Großteil der frühen Rate Zinsen sind. Jede Sondertilgung senkt die Marke.',
+    hint_bal:'Tipp: Fahren Sie über ein Jahr (oder tippen Sie es an), um die Restschuld zu sehen.',
+    // tax
+    tx_h:'🧮 Wie viel Steuer bekomme ich zurück?',
+    tx_sub:'Als Vermietung mindern Ihre Kosten die Mieteinnahmen. Der „Verlust" senkt Ihr übriges zu versteuerndes Einkommen. Stellen Sie unten Ihren <span class="gl" tabindex="0" title="Grenzsteuersatz: Steuer auf den obersten Teil Ihres Einkommens.">Grenzsteuersatz</span> ein:',
+    tx_income:'Mieteinnahmen (Kaltmiete x12)', tx_ded:'Werbungskosten gesamt', tx_res:'Ergebnis der Vermietung',
+    tx_save:'Jährliche Steuerersparnis', tx_mo:'Monatliche Steuerersparnis',
+    tx_note:'Die Einnahme ist nur die <b>Kaltmiete</b>. Die vom Mieter vorausgezahlten Nebenkosten bleiben außen vor, da ihnen abziehbare Betriebskosten gegenüberstehen und sich beides ungefähr ausgleicht.',
+    tx_wk_h:'🧾 Werbungskosten (abziehbar)', tx_th_item:'Position', tx_th_year:'pro Jahr',
+    tx_int:'Schuldzinsen', tx_afa:'Abschreibung (AfA)', tx_hg:'Hausgeld, umlagefähiger Teil', tx_sev_row:'SEV-Vergütung',
+    tx_gr:'Grundsteuer', tx_other:'Sonstiges (Kontoführung, Fahrten, Software)',
+    tx_total:'Summe, laufend pro Jahr', tx_fin:'Finanzierungskosten, Grundschuld', tx_firstyear:'nur im ersten Jahr',
+    tx_total_y1:'Gesamt im ersten Jahr (inkl. Einmalkosten)',
+    tx_fin_note:'Die Finanzierungskosten (Grundschuld-Eintragung und verwandte Geldbeschaffungskosten) sind voll abziehbar, aber nur im ersten Vermietungsjahr, anders als die kaufseitigen Gebühren, die in die Abschreibungsbasis fließen. Bei Ihrem Grenzsteuersatz ist das eine einmalige Ersparnis von etwa <b><span id="td-fin-save">210 &euro;</span></b>. <a class="cite" href="https://www.gesetze-im-internet.de/estg/__9.html" target="_blank" rel="noopener">&sect;9 EStG &uarr;</a>',
+    tx_claim_h:'🧴 Was vom Alltag kann ich absetzen? <span class="muted-xs">(deutsche Regeln)</span>',
+    tx_claim_sub:'Ein Kosten ist nur abziehbar, wenn er <span class="gl" tabindex="0" title="Veranlassungsprinzip: die Ausgabe muss durch die Vermietung veranlasst sein, nicht durch Ihre eigene Wohnung.">durch die Vermietung veranlasst</span> ist UND von Ihnen getragen wird. Reparaturen und Instandhaltung sind „Erhaltungsaufwand", im Zahlungsjahr voll abziehbar. <a class="cite" href="https://www.gesetze-im-internet.de/estg/__9.html" target="_blank" rel="noopener">§9 EStG ↗</a>',
+    tx_claim_th1:'Alltagsposten', tx_claim_th2:'Absetzbar?', tx_claim_th3:'Warum',
+    tx_cr1_i:'Schimmelspray, Reinigungs- & Kleinreparaturmaterial für die Wohnung', tx_cr1_p:'Ja', tx_cr1_w:'Vermieterseitige Reinigung/Reparatur zur Erhaltung der Vermietbarkeit = Erhaltungsaufwand, voll abziehbar im selben Jahr',
+    tx_cr2_i:'Farbe, Dichtmasse, Beschläge, kleine Reparaturen', tx_cr2_p:'Ja', tx_cr2_w:'Reparaturmaterial für die Vermietung',
+    tx_cr3_i:'Rauchmelder, kleine Geräte', tx_cr3_p:'Ja', tx_cr3_w:'Ein Wirtschaftsgut unter 800 € netto wird sofort abgeschrieben (GWG)',
+    tx_cr4_i:'Toilettenpapier, Seife, Glühbirnen während der Mietzeit (unmöbliert)', tx_cr4_p:'Nein', tx_cr4_w:'Der Mieter wohnt dort und kauft seine Verbrauchsmaterialien selbst, nicht Ihre Kosten',
+    tx_cr5_i:'Dasselbe in einer möblierten / Ferienwohnung, die Sie stellen', tx_cr5_p:'Ja', tx_cr5_w:'Wenn Sie sie als Teil einer möblierten Vermietung bereitstellen',
+    tx_claim_note:'Beispiele: <b>Schimmelspray = ja</b> (in der vermieteten Wohnung verwendet); <b>Toilettenpapier = nein</b> bei einer normalen unmöblierten Vermietung, das sind die eigenen Kosten des Mieters. Beleg in beiden Fällen aufbewahren.',
+    tx_rulings_h:'Aktuelle & maßgebliche Urteile',
+    tx_rule1:'Die WEG-Instandhaltungsrücklage ist erst abziehbar, wenn sie tatsächlich <b>verausgabt</b> wird. <a class="cite" href="https://www.bundesfinanzhof.de/en/entscheidungen/entscheidungen-online/decision-detail/STRE202510025/" target="_blank" rel="noopener">↗</a>',
+    tx_rule2:'Eine vertragliche Aufteilung Grund/Gebäude bindet, sofern nicht wirtschaftlich unhaltbar. <a class="cite" href="https://www.bundesfinanzhof.de/en/entscheidungen/entscheidungen-online/decision-detail/STRE202010257/" target="_blank" rel="noopener">↗</a>',
+    tx_rule3:'Auch kosmetische Schönheitsreparaturen zählen zur 15%-3-Jahres-Grenze. <a class="cite" href="https://www.bundesfinanzhof.de/en/entscheidungen/entscheidungen-online/decision-detail/STRE201610204/" target="_blank" rel="noopener">↗</a>',
+    tx_pitfalls:'<b>Fallstricke:</b> (1) die <b>15%-Falle</b> in den ersten 3 Jahren (unten). (2) Große Reparaturrechnungen auf 2 bis 5 Jahre verteilen (§82b EStDV). (3) Wirtschaftsgüter unter 800 € netto sofort abschreiben. (4) Unbar zahlen, auf Sie ausgestellte Belege aufbewahren. (5) Die Erklärung nicht mit Mieter-Verbrauchsmaterial aufblähen.',
+    tx_claim_foot:'Allgemeine Hinweise, keine individuelle Beratung; bitte mit Ihrem Steuerberater abstimmen.',
+    tx_wins_h:'💡 Zwei lohnende Steuervorteile',
+    tx_win1:'<b>Einbauküche über 10 Jahre, nicht 50.</b> Eine komplette Einbauküche kann über ~10 Jahre statt mit dem Gebäude über 50 abgeschrieben werden. <a class="cite" href="https://www.bundesfinanzhof.de/en/entscheidungen/entscheidungen-online/decision-detail/STRE201610271/" target="_blank" rel="noopener">BFH IX R 14/15 ↗</a>',
+    tx_win2:'<b>Notarrechnung aufteilen.</b> Der Grundschuld-Anteil plus dessen Eintragung ist sofort als Finanzierungskosten abziehbar, anders als die kaufbezogenen Gebühren. <a class="cite" href="https://www.buhl.de/steuer/ratgeber/notarkosten-absetzen/" target="_blank" rel="noopener">Buhl ↗</a>',
+    tx_reno_title:'15%-Renovierungsgrenze (erste 3 Jahre)',
+    tx_reno_limit_l:'<span class="gl" tabindex="0" title="anschaffungsnahe Herstellungskosten: Renovierung innerhalb von 3 Jahren nach Kauf über 15% des Gebäudewerts muss abgeschrieben werden, nicht sofort abgezogen.">Grenze</span> für frühe Renovierung',
+    tx_reno_window_l:'Zeitfenster', tx_reno_spent_l:'Bisher ausgegeben (netto, Eingabe durch Sie, auf diesem Gerät gespeichert)',
+    tx_reno_left_l:'Verbleibender Spielraum',
+    // sale
+    sale_title:'🏡 Nach 10 Jahren verkaufen?',
+    sale_intro:'Ein Gedankenspiel, kein Plan. Vielerorts ist der Gewinn aus einer privat gehaltenen Immobilie steuerfrei, wenn sie mehr als 10 Jahre nach Kauf verkauft wird.',
+    sale_base_sub:'Jährliche Wertsteigerung, angewendet auf Ihren <b><span id="sale-base">320.000 &euro;</span> Kaufpreis</b> (einmalige Kaufnebenkosten werden separat gezählt, nicht gesteigert):',
+    sale_worth_l:'Wert dann', sale_loan_l:'noch offene Restschuld',
+    sale_equity_l:'Ihr Eigenkapital (Wert minus Restschuld)', sale_in_l:'insgesamt eingesetztes Kapital',
+    sale_where_h:'Wohin der Verkaufserlös fließt',
+    sale_legend_loan:'<i class="sw" style="background:var(--slate)"></i>Restschuld getilgt',
+    sale_legend_cost:'<i class="sw" style="background:var(--gold)"></i>Verkaufskosten',
+    sale_legend_net:'<i class="sw" style="background:var(--teal)"></i>Netto an Sie',
+    sale_br1:'Verkaufspreis (bei Ihrer Wertsteigerung, 10 J.)', sale_br2:'abzgl. Verkaufskosten', sale_br3:'abzgl. offener Restschuld',
+    sale_br_net:'Netto-Erlös aus dem Verkauf', sale_br_in:'abzgl. eingesetztes Kapital', sale_br_profit:'Gewinn',
+    sale_sens_h:'Gewinn bei verschiedenen Wertsteigerungen',
+    sale_sens_th1:'Wertsteigerung/Jahr', sale_sens_th2:'Wert in 10 J.', sale_sens_th3:'Gewinn',
+    sale_note:'Selbst bei <b>0% Wertsteigerung</b> können Sie Gewinn machen, weil Ihr <b>Mieter den Kredit abbezahlt</b>. Jede reale Wertsteigerung kommt obendrauf.',
+    sale_de_h:'🇩🇪 Der steuerfreie Verkauf nach 10 Jahren (§23 EStG)',
+    sale_de_note:'Eine privat gehaltene Vermietung, die <b>mehr als 10 Jahre nach Kauf</b> verkauft wird, hat einen <b>steuerfreien</b> Gewinn (§23 EStG). Die Frist beginnt mit dem notariellen Kaufdatum. <a class="cite" href="https://www.gesetze-im-internet.de/estg/__23.html" target="_blank" rel="noopener">§23 EStG ↗</a>',
+    sale_de_li1:'<b>Knapp nach der 10-Jahres-Linie verkaufen</b> und nach Ende der Zinsbindung, damit der gesamte Gewinn steuerfrei ist und keine Vorfälligkeitsentschädigung anfällt.',
+    sale_de_li2:'<b>Innerhalb von 10 Jahren verkaufen</b> und der Gewinn wird mit Ihrem Grenzsteuersatz besteuert, mit Hinzurechnung der bereits geltend gemachten AfA.',
+    sale_de_li3:'<b>Eine Immobilie einmal verkauft = privat.</b> Verkaufen Sie nicht mehr als 3 in 5 Jahren.',
+    sale_de_li4:'⚠️ Bestätigen Sie das genaue steuerfreie Datum mit Ihrem Steuerberater vor Unterzeichnung.',
+    // facts
+    facts_h:'📜 Eckdaten', f_loan_l:'Darlehensbetrag', f_rate_l:'Sollzins (gebunden)',
+    f_eff_l:'Effektivzins <span class="gl" tabindex="0" title="Der effektive Jahreszins, abgeleitet durch monatliche Aufzinsung des nominalen Sollzinses: (1+Sollzins/12)^12-1. Er wird berechnet, nie eingegeben. Der im Vertrag ausgewiesene Effektivzins kann leicht höher sein, da er auch Einmalgebühren einbezieht.">(p.a., abgeleitet)</span>',
+    f_fixed_l:'Zinsbindung bis', f_pay_l:'Monatliche Rate', f_sonder_l:'Sondertilgungsrecht', f_price_l:'Kaufpreis',
+    facts_contacts_h:'🏦 Kontakt & Konto', facts_gs_h:'ℹ️ Gut zu wissen: der 15% Grundschuldzins',
+    facts_gs_note:'Eine deutsche <span class="gl" tabindex="0" title="Grundschuld: das im Grundbuch eingetragene Recht der Bank an der Immobilie, die Sicherheit für das Darlehen.">Grundschuld</span> trägt einen hohen notariellen Zinssatz (12 bis 18%). Das ist <b>nicht Ihr Zins und wird nie berechnet</b>; es ist eine übliche Sicherungsobergrenze, die nur in einer Zwangsversteigerung eine Rolle spielt. Nichts zu tun.',
+    facts_generic_note:'Länderspezifische Steuer- und Rechtshinweise werden für deutsche Objekte angezeigt. Für dieses Objekt funktioniert der Rechner weiterhin; die Steuerwerte verwenden den von Ihnen eingegebenen Grenzsteuersatz und die Abzüge.',
+    foot:'Open-Source-Demo von <a href="https://github.com/RealMattMurdoch" target="_blank" rel="noopener">RealMattMurdoch</a>. Nur illustrative Werte, keine Steuer- oder Finanzberatung. Jedes Objekt wird nur im Browser auf diesem Gerät gespeichert. Entwickler: hängen Sie <code>?test</code> an, um die eingebauten Selbsttests auszuführen.',
+    // help drawer
+    help_h:'⚡ Wie Sondertilgung funktioniert',
+    help_p1:'Stellen Sie sich eine Sondertilgung wie ein Sparkonto vor, das Ihren Kreditzins bringt, nur dass das Geld Ihre Restschuld senkt, statt auf einem Konto zu liegen. Auf den getilgten Teil zahlen Sie keine Zinsen mehr.',
+    help_s1:'Jede 1.000 €, die Sie zusätzlich tilgen, spart Ihren Zinssatz auf diesen Betrag, jedes Jahr, bis der Kredit weg ist.',
+    help_s2:'<b>Es wirkt zinseszinsartig:</b> eine kleinere Restschuld bedeutet auch im nächsten Jahr weniger Zinsen.',
+    help_s3:'<b>Nach Steuer</b> ist der Vorteil kleiner, weil Schuldzinsen absetzbar sind; Sie geben etwas Abzug auf. Trotzdem eine garantierte, risikofreie Rendite.',
+    help_box:'Bei Ihren aktuellen <b id="h-amt">1.500 €</b> pro Jahr:<br><div style="margin:8px 0"><span class="big2" id="h-y1">~63 €</span> <span class="muted-xs">Zinsersparnis im ersten Jahr (<span id="h-y1at">~36 € nach Steuer</span>)</span></div>Bis zum Ende der Zinsbindung gespart: <b id="h-2035">~?</b><br>Kredit getilgt <b id="h-yrs">? früher</b>',
+    help_warn:'Der Haken: dieses Geld ist <b>in der Immobilie gebunden</b>, bis Sie verkaufen oder umschulden. Bauen Sie zuerst eine Rücklage auf.',
+    // wizard + manage drawer chrome
+    wz_back:'Zurück', wz_savefin:'Speichern & abschließen',
+    mg_h2:'⚙ Werte bearbeiten (stichtagsbezogen)',
+    mg_sub:'Ändern Sie einen Kostenposten oder die Miete, sodass er <b>ab einem gewählten Monat</b> gilt. Die Historie bleibt erhalten. Auf diesem Gerät gespeichert.',
+    mg_save:'Änderungen speichern'
+  };
+
+  // Locale-aware builders for dynamic strings (sentences with live numbers, wizard, manage, charts, alerts).
+  var TPL={
+    en:{
+      afterTax:' after tax',
+      hdrTitle:function(name){return '🏠 '+name+' - Mortgage &amp; Investment';},
+      hdrSub:function(addr,ref,asof){return addr+(ref?(' · '+ref):'')+' · <span id="asof">as of '+fmtMonth(asof)+'</span>';},
+      heroAnchor:function(price){return 'after tax, to own a '+eur(price)+' property that a tenant is paying down for you';},
+      tDate:function(fixend){return 'Dec '+fixend;},
+      mRentFrom:function(m){return 'from '+fmtMonth(m);},
+      rfTitle:function(fixend){return '📅 What happens when my fixed rate ends ('+fixend+')?';},
+      saleProfitL:function(years){return 'profit if you sold after '+years+' years';},
+      fFixed:function(fixend){return 'end '+fixend;},
+      fSonder:function(max){return eur(max)+'/yr';},
+      tDateSub:function(years){return years+' yrs of fixed rate';},
+      trBadge:function(pc){return '(at '+pc+')';},
+      oYrs:function(txt){return txt+' yrs';},
+      ovTakeaway0:'Drag the slider to see the effect of overpaying.',
+      ovTakeaway:function(amt,c,opt,baseRun){return 'You overpay <b>'+deNum(amt)+' €/year</b> ('+eur(c.totalSonder)+' paid in). You owe <b>'+eur(c.balDiff)+' less</b> at the refinancing point, save <b>'+eur(c.savedToFix)+'</b> during the fixed period, and <b>'+eur(c.intSaved)+'</b> over the loan\'s life, clearing it in <b>'+opt.payoffYear+'</b> instead of '+baseRun.payoffYear+'.';},
+      hYrs:function(yrsDec,isZero){return isZero?'no change':(deDec(yrsDec)+' years sooner');},
+      cfSummary:function(idxPct,a,z,fixend){return 'At <b>'+deDec2(idxPct)+'%/year</b>, warm rent rises from '+eur2(a.warm)+' to ~<b>'+eur2(z.warm)+'</b>/month by '+fixend+', and the gross gap narrows from '+eur2(a.grossNet)+' to ~<b>'+eur2(z.grossNet)+'</b>. After tax it stays around <b>'+eur2(z.afterTax)+'</b>: as rent rises the rental loss (and tax refund) shrinks, so the gain shows up as equity, not a lower monthly bill.';},
+      refiSummary:function(rr,years,handover,pay,payoff,sameRate,coversInt){return '<b>Projection:</b> at a follow-on rate of <b>'+deDec2(rr)+'%</b> over <b>'+years+' years</b> on the ~'+eur(handover)+' handover balance, the payment is ~<b>'+eur2(pay)+'</b>/month and the loan clears in <b>'+payoff+'</b>.'+(sameRate?' This is the default assumption that today\'s rate continues.':'')+(coversInt?'':' <b style="color:var(--red)">This payment does not cover the monthly interest, so the balance would grow. Raise the payment or shorten the term.</b>');},
+      refiNow:' (now)',
+      renoPct:function(spent,limit,pct){return eur(spent)+' of '+eur(limit)+' used ('+Math.round(pct)+'%)';},
+      renoOver:'Over the limit. Net spend above the limit in the first 3 years is reclassified and only depreciated, not deducted immediately. Check with your Steuerberater.',
+      renoWarn:function(pct){return 'Approaching the limit ('+Math.round(pct)+'%). Keep cumulative net renovation under the limit, or defer the rest.';},
+      renoOk:'Keep cumulative renovation spend under the limit (net) in the first 3 years to keep it immediately deductible.',
+      ooMsg:function(y,tot,smax){return y+': '+eur(tot)+' total vs '+eur(smax)+' allowance';},
+      ooWarn:function(m){return '<b>Over the annual Sondertilgung allowance</b><br>'+m+'<br>The model still applies them, but your bank may charge a penalty above the cap.';},
+      srCf:['Monthly cash position by year',['Year','Warm in','Total out','Gross gap','After-tax']],
+      srSplit:['Monthly interest vs principal by year',['Year','Interest/mo','Principal/mo']],
+      srBal:['Loan balance at year end',['Year','Balance']],
+      srOver:['Loan balance: without vs with overpaying',['Year','Without','With']],
+      srRate:['Monthly payment after the fixed period',['Scenario','Monthly payment']],
+      srToday:'Today', srNew:function(r){return 'Your new rate ('+r+'%)';}, srFallback:function(r){return 'Do-nothing fallback ('+r+'%)';},
+      tipSplit:function(y,mp,mi){return '<b>'+y+'</b><br>Principal: <b>'+eur2(mp)+'/mo</b><br>Interest: <b>'+eur2(mi)+'/mo</b>';},
+      tipBalBoth:function(y,b0,b1){return '<b>'+y+'</b><br>Without: <b>'+eur(b0)+'</b><br>With: <b>'+eur(b1)+'</b>';},
+      tipBalOne:function(y,b0){return '<b>'+y+'</b><br>You owe <b>'+eur(b0)+'</b>';},
+      tipRate:function(label,v,dd){return '<b>'+label+'</b><br><b>'+eur2(v)+'</b><br>'+(Math.abs(dd)<1?'same as today':((dd>0?'+':'-')+eur2(Math.abs(dd))+'/mo'));},
+      tipCf:function(d){return '<b>'+d.y+'</b><br>Warm in: <b>'+eur2(d.warm)+'</b><br>Total out: <b>'+eur2(d.out)+'</b><br>Gross gap: <b>'+eur2(d.grossNet)+'/mo</b><br>After tax: '+eur2(d.afterTax)+'/mo';},
+      barToday:'Today', barNew:'New rate', barNothing:'Do-nothing',
+      alertOnlyProp:'You cannot delete your only property. Add another first.',
+      promptDelete:function(name){return 'Delete "'+name+'"? This removes it from this device.\nTip: Export it first to keep a copy.\n\nType the property name to confirm:';},
+      alertNameMismatch:'Name did not match. Nothing deleted.',
+      alertBadFile:'That file does not look like a valid property.',
+      importedSuffix:' (imported)', alertImported:function(n){return 'Imported "'+n+'".';},
+      alertReadFail:function(m){return 'Could not read that file: '+m;},
+      alertExportFail:function(m){return 'Export failed: '+m;},
+      alertNeedName:'Please give the property a name.', alertNeedLoan:'Please enter a loan amount.',
+      wizAddTitle:'Add a property', wizContinue:'Continue', wizFinish:'Finish',
+      wiz:{
+        t:['Name &amp; address','Purchase','Loan','Costs (monthly)','Rent','Tax','Assumptions'],
+        name:'Display name', name_h:'A label so you can tell properties apart',
+        addr:'Address', country:'Country code (DE for German tax guidance)', country_h:'Use DE for German tax cards; anything else hides them',
+        price:'Purchase price (€)', price_h:'The value to appreciate over time', ek:'Your own cash / deposit (€)',
+        pc:'One-off buying costs (€)', pc_h:'Transfer tax, notary, registration', sc:'Selling cost % (when you sell)', sc_h:'Agent fee etc., default ~3,57',
+        loan:'Loan amount (€)', rate:'Nominal rate / Sollzins (%)', rate_h:'The debit rate that drives the maths. The effective rate (Effektivzins) is derived and shown in Key conditions.',
+        pay:'Monthly payment (€)', pay_h:'Your annuity', sy:'Start year', fix:'Fixed until (year)', term:'Final payoff year', smax:'Overpayment allowance per year (€)',
+        hg:'Service charge / Hausgeld (€/mo)', sev:'Management fee / SEV (€/mo)', costs_note:'You can date future changes later via Edit values.',
+        rfrom:'Rent starts (month)', cold:'Net cold rent (€/mo)', warm:'Warm rent (€/mo)', warm_h:'Cold + Nebenkosten prepayment', idx:'Index growth assumption (%/yr)', idx_h:'Default 2',
+        tax:'Marginal tax rate (%)', tax_h:'Default 42', afa:'Annual depreciation / AfA (€)', dhg:'Deductible service charge part (€/yr)', dgr:'Property tax (€/yr)', dint:'First-year mortgage interest (€)', dint_h:'For the deductions table', reno:'Renovation 15% limit (€)', reno_h:'15% of building value',
+        appr:'Appreciation (%/yr)', appr_h:'Default 2', sonder:'Planned overpayment (€/yr)'
+      },
+      mg:{
+        credit_title:'Loan &amp; credit (the current term)', principal:'Loan principal (&euro;)', rate:'Nominal rate / Sollzins (%)', payment:'Monthly payment (&euro;)',
+        sy:'Loan start year', fix:'Fixed period ends (year)', term:'Full term ends (year)', smax:'Annual Sondertilgung allowance (&euro;)', varr:'Variable fallback rate (%)',
+        credit_note:'The <b>Sollzins</b> (nominal rate) drives all the maths; the effective rate (Effektivzins) is derived from it and shown in Key conditions, never entered. For a remortgage: enter the new Sollzins AND the new monthly payment from your follow-on offer.',
+        follow_title:'Follow-on projection (after the fixed period)', frate:'Projected follow-on rate (%)', fend:'Follow-on repaid by (year)', fpay:'Follow-on payment (&euro;, 0 = auto)',
+        ps_title:'Purchase &amp; sale', price:'Purchase price (&euro;)', ek:'Equity / Eigenkapital (&euro;)', pc:'Purchase costs (&euro;)', condo:'Condo / refund bonus (&euro;)', sc:'Selling cost (%)', sale_years:'Sale horizon (years)',
+        tax_title:'Tax (annual; &euro;/yr unless %)', marg:'Marginal tax rate (%)', dint:'Deductible interest, year 1 (&euro;)', afa:'Depreciation / AfA (&euro;)', dhg:'Deductible Hausgeld (&euro;)', dsev:'Deductible SEV (&euro;)', dgr:'Grundsteuer (&euro;)', doth:'Other deductible (&euro;)', dfin:'Financing setup, one-off year 1 (&euro;)', reno:'Renovation 15% limit (&euro;)',
+        assume_title:'Assumptions &amp; status', idx:'Index growth (%/yr)', appr:'Appreciation (%/yr)', sonder:'Planned overpay (&euro;/yr)', asof:'As-of month', asofpay:'Payments made so far',
+        hausgeld_title:'Service charge / Hausgeld', sev_title:'Management fee / SEV', rent_title:'Rent (net cold / warm)',
+        rent_fh:'month / cold / warm. A new dated rent overrides the index growth from then on.',
+        add_dated:'+ Add dated change', add_rent:'+ Add rent change', remove:'remove', unit_mo:'€/mo'
+      }
+    },
+    de:{
+      afterTax:' nach Steuer',
+      hdrTitle:function(name){return '🏠 '+name+' - Hypothek &amp; Investment';},
+      hdrSub:function(addr,ref,asof){return addr+(ref?(' · '+ref):'')+' · <span id="asof">Stand '+fmtMonth(asof)+'</span>';},
+      heroAnchor:function(price){return 'nach Steuer, um eine Immobilie für '+eur(price)+' zu besitzen, die ein Mieter für Sie abbezahlt';},
+      tDate:function(fixend){return 'Dez. '+fixend;},
+      mRentFrom:function(m){return 'ab '+fmtMonth(m);},
+      rfTitle:function(fixend){return '📅 Was passiert nach Ende der Zinsbindung ('+fixend+')?';},
+      saleProfitL:function(years){return 'Gewinn bei Verkauf nach '+years+' Jahren';},
+      fFixed:function(fixend){return 'Ende '+fixend;},
+      fSonder:function(max){return eur(max)+'/Jahr';},
+      tDateSub:function(years){return years+' Jahre Zinsbindung';},
+      trBadge:function(pc){return '(bei '+pc+')';},
+      oYrs:function(txt){return txt+' Jahre';},
+      ovTakeaway0:'Bewegen Sie den Regler, um die Wirkung der Sondertilgung zu sehen.',
+      ovTakeaway:function(amt,c,opt,baseRun){return 'Sie tilgen zusätzlich <b>'+deNum(amt)+' €/Jahr</b> (insgesamt '+eur(c.totalSonder)+'). Sie schulden zum Anschluss <b>'+eur(c.balDiff)+' weniger</b>, sparen <b>'+eur(c.savedToFix)+'</b> während der Zinsbindung und <b>'+eur(c.intSaved)+'</b> über die gesamte Laufzeit; der Kredit ist <b>'+opt.payoffYear+'</b> statt '+baseRun.payoffYear+' getilgt.';},
+      hYrs:function(yrsDec,isZero){return isZero?'keine Änderung':(deDec(yrsDec)+' Jahre früher');},
+      cfSummary:function(idxPct,a,z,fixend){return 'Bei <b>'+deDec2(idxPct)+'%/Jahr</b> steigt die Warmmiete von '+eur2(a.warm)+' auf ~<b>'+eur2(z.warm)+'</b>/Monat bis '+fixend+', und die Brutto-Lücke verringert sich von '+eur2(a.grossNet)+' auf ~<b>'+eur2(z.grossNet)+'</b>. Nach Steuer bleibt sie bei etwa <b>'+eur2(z.afterTax)+'</b>: mit steigender Miete sinkt der Vermietungsverlust (und die Steuererstattung), der Vorteil zeigt sich also als Eigenkapital, nicht als niedrigere Monatsrate.';},
+      refiSummary:function(rr,years,handover,pay,payoff,sameRate,coversInt){return '<b>Projektion:</b> bei einem Anschlusszins von <b>'+deDec2(rr)+'%</b> über <b>'+years+' Jahre</b> auf die Anschlussschuld von ~'+eur(handover)+' beträgt die Rate ~<b>'+eur2(pay)+'</b>/Monat und der Kredit ist <b>'+payoff+'</b> getilgt.'+(sameRate?' Dies ist die Standardannahme, dass der heutige Zins fortgeschrieben wird.':'')+(coversInt?'':' <b style="color:var(--red)">Diese Rate deckt die monatlichen Zinsen nicht, die Restschuld würde wachsen. Erhöhen Sie die Rate oder verkürzen Sie die Laufzeit.</b>');},
+      refiNow:' (jetzt)',
+      renoPct:function(spent,limit,pct){return eur(spent)+' von '+eur(limit)+' genutzt ('+Math.round(pct)+'%)';},
+      renoOver:'Über der Grenze. Nettoausgaben über der Grenze in den ersten 3 Jahren werden umqualifiziert und nur abgeschrieben, nicht sofort abgezogen. Bitte mit Ihrem Steuerberater abstimmen.',
+      renoWarn:function(pct){return 'Nähert sich der Grenze ('+Math.round(pct)+'%). Halten Sie die kumulierten Netto-Renovierungskosten unter der Grenze oder verschieben Sie den Rest.';},
+      renoOk:'Halten Sie die kumulierten Renovierungskosten (netto) in den ersten 3 Jahren unter der Grenze, damit sie sofort abziehbar bleiben.',
+      ooMsg:function(y,tot,smax){return y+': '+eur(tot)+' gesamt vs. '+eur(smax)+' Freibetrag';},
+      ooWarn:function(m){return '<b>Über dem jährlichen Sondertilgungsrecht</b><br>'+m+'<br>Das Modell berücksichtigt sie trotzdem, aber Ihre Bank kann oberhalb der Grenze eine Gebühr verlangen.';},
+      srCf:['Monatliche Liquidität nach Jahr',['Jahr','Warm ein','Ausgaben','Brutto-Lücke','Nach Steuer']],
+      srSplit:['Monatliche Zinsen vs. Tilgung nach Jahr',['Jahr','Zinsen/Mon','Tilgung/Mon']],
+      srBal:['Restschuld zum Jahresende',['Jahr','Restschuld']],
+      srOver:['Restschuld: ohne vs. mit Sondertilgung',['Jahr','Ohne','Mit']],
+      srRate:['Monatliche Rate nach der Zinsbindung',['Szenario','Monatliche Rate']],
+      srToday:'Heute', srNew:function(r){return 'Ihr neuer Zins ('+r+'%)';}, srFallback:function(r){return 'Variabler Rückfall ('+r+'%)';},
+      tipSplit:function(y,mp,mi){return '<b>'+y+'</b><br>Tilgung: <b>'+eur2(mp)+'/Mon</b><br>Zinsen: <b>'+eur2(mi)+'/Mon</b>';},
+      tipBalBoth:function(y,b0,b1){return '<b>'+y+'</b><br>Ohne: <b>'+eur(b0)+'</b><br>Mit: <b>'+eur(b1)+'</b>';},
+      tipBalOne:function(y,b0){return '<b>'+y+'</b><br>Restschuld <b>'+eur(b0)+'</b>';},
+      tipRate:function(label,v,dd){return '<b>'+label+'</b><br><b>'+eur2(v)+'</b><br>'+(Math.abs(dd)<1?'wie heute':((dd>0?'+':'-')+eur2(Math.abs(dd))+'/Mon'));},
+      tipCf:function(d){return '<b>'+d.y+'</b><br>Warm ein: <b>'+eur2(d.warm)+'</b><br>Ausgaben: <b>'+eur2(d.out)+'</b><br>Brutto-Lücke: <b>'+eur2(d.grossNet)+'/Mon</b><br>Nach Steuer: '+eur2(d.afterTax)+'/Mon';},
+      barToday:'Heute', barNew:'Neuer Zins', barNothing:'Nichtstun',
+      alertOnlyProp:'Sie können Ihr einziges Objekt nicht löschen. Fügen Sie zuerst ein weiteres hinzu.',
+      promptDelete:function(name){return '"'+name+'" löschen? Es wird von diesem Gerät entfernt.\nTipp: Exportieren Sie es zuerst, um eine Kopie zu behalten.\n\nGeben Sie zur Bestätigung den Objektnamen ein:';},
+      alertNameMismatch:'Name stimmt nicht überein. Nichts gelöscht.',
+      alertBadFile:'Diese Datei sieht nicht nach einem gültigen Objekt aus.',
+      importedSuffix:' (importiert)', alertImported:function(n){return '"'+n+'" importiert.';},
+      alertReadFail:function(m){return 'Datei konnte nicht gelesen werden: '+m;},
+      alertExportFail:function(m){return 'Export fehlgeschlagen: '+m;},
+      alertNeedName:'Bitte geben Sie dem Objekt einen Namen.', alertNeedLoan:'Bitte geben Sie einen Darlehensbetrag ein.',
+      wizAddTitle:'Objekt hinzufügen', wizContinue:'Weiter', wizFinish:'Abschließen',
+      wiz:{
+        t:['Name &amp; Adresse','Kauf','Darlehen','Kosten (monatlich)','Miete','Steuer','Annahmen'],
+        name:'Anzeigename', name_h:'Ein Etikett, damit Sie Objekte unterscheiden können',
+        addr:'Adresse', country:'Ländercode (DE für deutsche Steuerhinweise)', country_h:'DE für deutsche Steuerkarten; alles andere blendet sie aus',
+        price:'Kaufpreis (€)', price_h:'Der Wert, der über die Zeit steigt', ek:'Eigenkapital / Anzahlung (€)',
+        pc:'Einmalige Kaufnebenkosten (€)', pc_h:'Grunderwerbsteuer, Notar, Grundbuch', sc:'Verkaufskosten % (beim Verkauf)', sc_h:'Maklergebühr usw., Standard ~3,57',
+        loan:'Darlehensbetrag (€)', rate:'Sollzins (%)', rate_h:'Der nominale Zins, der die Berechnung treibt. Der Effektivzins wird abgeleitet und in den Eckdaten gezeigt.',
+        pay:'Monatliche Rate (€)', pay_h:'Ihre Annuität', sy:'Startjahr', fix:'Zinsbindung bis (Jahr)', term:'Letztes Tilgungsjahr', smax:'Sondertilgungsrecht pro Jahr (€)',
+        hg:'Hausgeld (€/Mon)', sev:'SEV-Vergütung (€/Mon)', costs_note:'Künftige Änderungen können Sie später über „Werte bearbeiten" datieren.',
+        rfrom:'Miete beginnt (Monat)', cold:'Kaltmiete (€/Mon)', warm:'Warmmiete (€/Mon)', warm_h:'Kalt + Nebenkostenvorauszahlung', idx:'Annahme Indexsteigerung (%/Jahr)', idx_h:'Standard 2',
+        tax:'Grenzsteuersatz (%)', tax_h:'Standard 42', afa:'Jährliche Abschreibung / AfA (€)', dhg:'Abziehbarer Hausgeld-Anteil (€/Jahr)', dgr:'Grundsteuer (€/Jahr)', dint:'Schuldzinsen erstes Jahr (€)', dint_h:'Für die Werbungskosten-Tabelle', reno:'Renovierungs-15%-Grenze (€)', reno_h:'15% des Gebäudewerts',
+        appr:'Wertsteigerung (%/Jahr)', appr_h:'Standard 2', sonder:'Geplante Sondertilgung (€/Jahr)'
+      },
+      mg:{
+        credit_title:'Darlehen & Kredit (aktuelle Phase)', principal:'Darlehensbetrag (&euro;)', rate:'Sollzins (%)', payment:'Monatliche Rate (&euro;)',
+        sy:'Startjahr des Darlehens', fix:'Zinsbindung endet (Jahr)', term:'Volle Laufzeit endet (Jahr)', smax:'Jährliches Sondertilgungsrecht (&euro;)', varr:'Variabler Rückfallzins (%)',
+        credit_note:'Der <b>Sollzins</b> treibt die gesamte Berechnung; der Effektivzins wird daraus abgeleitet und in den Eckdaten gezeigt, nie eingegeben. Bei einer Umschuldung: tragen Sie den neuen Sollzins UND die neue Monatsrate aus Ihrem Anschlussangebot ein.',
+        follow_title:'Anschluss-Projektion (nach der Zinsbindung)', frate:'Projizierter Anschlusszins (%)', fend:'Anschluss getilgt bis (Jahr)', fpay:'Anschlussrate (&euro;, 0 = automatisch)',
+        ps_title:'Kauf & Verkauf', price:'Kaufpreis (&euro;)', ek:'Eigenkapital (&euro;)', pc:'Kaufnebenkosten (&euro;)', condo:'Bonus / Erstattung (&euro;)', sc:'Verkaufskosten (%)', sale_years:'Verkaufshorizont (Jahre)',
+        tax_title:'Steuer (jährlich; &euro;/Jahr außer %)', marg:'Grenzsteuersatz (%)', dint:'Abziehbare Zinsen, Jahr 1 (&euro;)', afa:'Abschreibung / AfA (&euro;)', dhg:'Abziehbares Hausgeld (&euro;)', dsev:'Abziehbare SEV (&euro;)', dgr:'Grundsteuer (&euro;)', doth:'Sonstige abziehbar (&euro;)', dfin:'Finanzierungskosten, einmalig Jahr 1 (&euro;)', reno:'Renovierungs-15%-Grenze (&euro;)',
+        assume_title:'Annahmen & Status', idx:'Indexsteigerung (%/Jahr)', appr:'Wertsteigerung (%/Jahr)', sonder:'Geplante Sondertilgung (&euro;/Jahr)', asof:'Stichtagsmonat', asofpay:'Bisher geleistete Zahlungen',
+        hausgeld_title:'Hausgeld', sev_title:'SEV-Vergütung', rent_title:'Miete (kalt / warm)',
+        rent_fh:'Monat / kalt / warm. Eine neue datierte Miete überschreibt ab dann die Indexsteigerung.',
+        add_dated:'+ Datierte Änderung hinzufügen', add_rent:'+ Mietänderung hinzufügen', remove:'entfernen', unit_mo:'€/Mon'
+      }
+    }
+  };
+  function TL(){return TPL[LOCALE];}
+
+  // ===================== DEFAULT PROPERTY (fictional sample, no real data) =====================
+  // Illustrative numbers for a typical German buy-to-let. Not anyone's real loan, address, bank
+  // or account. Replace it via the setup wizard / "Edit values", or delete it once you add your own.
+  function sampleProperty(){
+    return {
+      schema:1, id:'prop_sample', name:'Sample apartment', country:'DE', currency:'EUR',
+      address:'Musterstraße 12, 12345 Musterstadt', loanRef:'Demo loan',
+      asOfMonth:'2025-06', asOfPayments:5,
+      loan:{principal:300000, ratePct:3.800, payment:1397.87, startYear:2025, fixedUntilYear:2035, termEndYear:2055, sonderMax:15000, varRatePct:5.50, sonderEvents:[]},
+      refinance:{ratePct:3.800, termEndYear:2055, payment:0},
+      purchase:{price:320000, eigenkapital:64000, purchaseCosts:30000, condoBonus:0, sellCostPct:3.57, saleYears:10, notaryDate:'', taxFreeFrom:''},
+      costs:{ hausgeld:[{from:'2025-01',value:350.00}], sev:[{from:'2025-01',value:30.00}] },
+      hgNote:'',
+      rent:{ firstMonth:'2025-03', firstFullStepYear:2027, explicit:[{from:'2025-03',cold:1100,warm:1400,bk:180,hk:120}] },
+      tax:{ marginalPct:42, dedInterest:11305.40, dedAfa:4800, dedHausgeld:3000, dedSev:360, dedGrundsteuer:300, dedOther:200, dedFinancingOneOff:500, renoLimit:33600, renoWindow:'first 3 years' },
+      assumptions:{ idxPct:2, apprPct:2, sonderAnnual:1500, refiPct:4.5 },
+      reno:{spent:0},
+      facts:[ ['Bank','Beispielbank AG'], ['Advisor','Max Mustermann'], ['Phone','0123 4567890'], ['Email','berater@beispielbank.example'] ],
+      contractTable:null
+    };
+  }
+
+  // ===================== STORE (per-property by id) =====================
+  var IDX_KEY='mpd:index', LEGACY='mortgage_dash_v1';
+  function lsGet(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}}
+  function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}
+  function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
+  function propKey(id){return 'mpd:prop:'+id;}
+  function uiKey(id){return 'mpd:ui:'+id;}
+  function newId(){return 'prop_'+Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36);}
+  function getIndex(){return lsGet(IDX_KEY);}
+  function saveProp(P){lsSet(propKey(P.id),P);}
+  function loadProp(id){return lsGet(propKey(id));}
+  function bootstrap(){
+    var idx=getIndex();
+    if(idx&&idx.order&&idx.order.length) return idx;
+    // first run: seed the sample property, migrate any legacy single-property UI state
+    var Q=sampleProperty(); saveProp(Q);
+    var legacy=lsGet(LEGACY);
+    if(legacy){ lsSet(uiKey(Q.id),{tax:legacy.tax,sonder:legacy.sonder,refi:legacy.refi,idx:legacy.idx,appr:legacy.appr,reno:legacy.reno}); }
+    idx={schema:1, activeId:Q.id, order:[{id:Q.id,name:Q.name}]};
+    lsSet(IDX_KEY,idx); return idx;
+  }
+
+  // ===================== ENGINE STATE (set by activate) =====================
+  var P=null; // active property
+  var LOAN,FIXR,MR,MP,SMAX,FIXEND,TERM_END,START_YEAR,ASOF_PAYMENTS,BAL2035;
+  var RENT_COLD,RENT_WARM,OUT_TOTAL,GROSS_GAP;
+  var DED, SCHED, baseRun;
+  var taxRate,sonderAmt,refiRate,idxRate,apprRate,renoSpent,RENO_LIMIT;
+
+  function annuity(bal,r,n){if(n<=0)return bal;return r<=0?bal/n:bal*r/(1-Math.pow(1+r,-n));}
+  // Effective annual rate derived from the nominal Sollzins (monthly compounding). Always an OUTPUT, never an input.
+  function effAnnual(ratePct){return (Math.pow(1+ratePct/100/12,12)-1)*100;}
+  function curEvents(){return (P&&P.loan&&P.loan.sonderEvents)||[];}
+  // amortize(sonder, events, proj): sonder = recurring annual overpay; events = one-off lump sums [{from:'YYYY-MM',amount}].
+  // Phase 2 (after the fixed period) is ALWAYS a projection. proj (defaults to P.refinance) gives the projected
+  // follow-on rate/term/payment. It only deviates from a simple continuation of today's payment when the projected
+  // rate differs from the fixed rate (or a manual payment is set); otherwise it continues at MP (the baseline).
+  function amortize(sonder, events, proj){
+    events=events||[];
+    proj=proj||(P&&P.refinance)||null;
+    var pRate=(proj&&proj.ratePct!=null)?proj.ratePct:(FIXR*100);
+    var pEnd=(proj&&proj.termEndYear)?proj.termEndYear:TERM_END;
+    var pPay=(proj&&proj.payment>0)?proj.payment:0;
+    var deviate=(Math.abs(pRate-FIXR*100)>1e-9)||(pPay>0)||(pEnd!==TERM_END);
+    var refiMR=pRate/100/12, rPay=null;
+    var bal=LOAN,months=0,totInt=0,intToFix=0,balFix=0,yearly=[],yi=0,yp=0,ys=0,startBal=bal;
+    for(var m=0;m<MAX_MONTHS&&bal>EPS;m++){
+      var year=START_YEAR+Math.floor(m/12), mo=m%12, inFix=(year<=FIXEND);
+      if(deviate&&!inFix&&rPay===null){rPay=(pPay>0?pPay:annuity(bal,refiMR,Math.max(1,(pEnd-FIXEND)*12)));}
+      var rate=inFix?MR:(deviate?refiMR:MR), pay=inFix?MP:(deviate?rPay:MP);
+      if(mo===0){startBal=bal;yi=0;yp=0;ys=0;}
+      if(mo===0&&sonder>0&&year>=START_YEAR+1&&year<=FIXEND){var s=Math.min(sonder,bal);bal-=s;ys+=s;}
+      if(events.length){var ym=year+'-'+(mo<9?'0':'')+(mo+1);for(var e=0;e<events.length;e++){if(events[e].from===ym&&events[e].amount>0){var so=Math.min(events[e].amount,bal);bal-=so;ys+=so;}}}
+      var interest=bal*rate, principal=pay-interest; if(principal>bal)principal=bal; if(principal<0)principal=0;
+      bal-=principal; totInt+=interest; if(year<=FIXEND)intToFix+=interest;
+      yi+=interest;yp+=principal;months++;
+      if(mo===11||bal<=EPS){yearly.push({y:year,start:startBal,i:yi,p:yp,s:ys,end:Math.max(0,bal)});}
+      if(year===FIXEND&&mo===11)balFix=Math.max(0,bal);
+    }
+    return {yearly:yearly,totInt:totInt,intToFix:intToFix,months:months,payoffYear:START_YEAR+Math.floor((months-1)/12),balAt2035:balFix};
+  }
+  function refiPayment(rate){var n=(TERM_END-FIXEND)*12,r=rate/12;if(r<=0)return BAL2035/n;return BAL2035*r/(1-Math.pow(1+r,-n));}
+  // projected monthly payment for phase 2 under the current projection, on the actual handover balance (with overpay)
+  function projHandover(){return amortize(sonderAmt,curEvents()).balAt2035;}
+  function projPaymentAt(ratePct,endYear,manual){var h=projHandover();if(manual>0)return manual;var n=Math.max(1,((endYear||((P.refinance&&P.refinance.termEndYear)||TERM_END))-FIXEND)*12);return annuity(h,(ratePct/100)/12,n);}
+  function projPayment(){var r=(P.refinance&&P.refinance.ratePct!=null)?P.refinance.ratePct:(FIXR*100);return projPaymentAt(r,(P.refinance&&P.refinance.termEndYear)||TERM_END,(P.refinance&&P.refinance.payment)||0);}
+  function totalDed(){return DED.interest+DED.afa+DED.hausgeld+DED.sev+DED.grundsteuer+DED.other;}
+  function taxModel(rate){var income=RENT_COLD*12,ded=totalDed(),net=income-ded,saving=Math.abs(net)*rate,monthly=saving/12;return {income:income,ded:ded,net:net,saving:saving,monthly:monthly,afterTaxNet:GROSS_GAP+monthly};}
+  function computeSonder(sonder){var opt=amortize(sonder,curEvents()),tot=0;opt.yearly.forEach(function(r){tot+=r.s;});return {opt:opt,intSaved:baseRun.totInt-opt.totInt,monthsSaved:baseRun.months-opt.months,yrsDec:(baseRun.months-opt.months)/12,totalSonder:tot,balDiff:baseRun.balAt2035-opt.balAt2035,savedToFix:baseRun.intToFix-opt.intToFix};}
+  function projectYears(g){
+    var fixedDed=DED.afa+DED.hausgeld+DED.sev+DED.grundsteuer+DED.other, arr=[];
+    for(var Y=START_YEAR;Y<=FIXEND;Y++){
+      var idx=Y-START_YEAR, schedI=(SCHED[idx]?SCHED[idx].i:0);
+      var hg=seriesGrownForYear(P.costs.hausgeld,Y,g,P.rent.firstFullStepYear);
+      var sev=seriesGrownForYear(P.costs.sev,Y,g,P.rent.firstFullStepYear);
+      var out=MP+hg+sev, rentY=rentGrownForYear(P,Y,g), warm=rentY.warm, income=rentY.cold*12;
+      var oneOff=(Y===START_YEAR?(DED.financing||0):0); // financing setup cost deducts in the first year only
+      var ded=schedI+fixedDed+oneOff, loss=Math.max(0,ded-income), benefitMo=loss*taxRate/12;
+      arr.push({y:Y,warm:warm,out:out,grossNet:warm-out,afterTax:(warm-out)+benefitMo,coldRent:rentY.cold});
+    }
+    return arr;
+  }
+  function saleScenario(g){
+    var opt=amortize(sonderAmt,curEvents()), loanLeft=opt.balAt2035, tot=0; opt.yearly.forEach(function(r){tot+=r.s;});
+    var carry=0; projectYears(idxRate).forEach(function(d){carry+=d.afterTax*12;});
+    var sv=P.purchase.price*Math.pow(1+g,P.purchase.saleYears), sc=sv*P.purchase.sellCostPct/100;
+    var net=sv-sc-loanLeft, cashIn=P.purchase.eigenkapital+P.purchase.purchaseCosts+tot-P.purchase.condoBonus+(-carry);
+    return {saleValue:sv,sellCosts:sc,loanLeft:loanLeft,netProceeds:net,cashIn:cashIn,profit:net-cashIn,equity:sv-loanLeft};
+  }
+  function renoLeft(spent){return Math.max(0,RENO_LIMIT-spent);}
+
+  // ===================== ACTIVATE =====================
+  function setEngineFrom(prop){
+    P=prop;
+    LOAN=prop.loan.principal; FIXR=prop.loan.ratePct/100; MR=FIXR/12; MP=prop.loan.payment;
+    SMAX=prop.loan.sonderMax; FIXEND=prop.loan.fixedUntilYear; TERM_END=prop.loan.termEndYear; START_YEAR=prop.loan.startYear;
+    ASOF_PAYMENTS=prop.asOfPayments||0;
+    var now=prop.asOfMonth||(prop.rent.firstMonth);
+    var hgNow=valueAt(prop.costs.hausgeld,now), sevNow=valueAt(prop.costs.sev,now);
+    var rNow=prop.rent.explicit[0]; for(var i=0;i<prop.rent.explicit.length;i++){if(prop.rent.explicit[i].from<=now)rNow=prop.rent.explicit[i];}
+    RENT_COLD=rNow.cold; RENT_WARM=rNow.warm; OUT_TOTAL=MP+hgNow+sevNow; GROSS_GAP=RENT_WARM-OUT_TOTAL;
+    DED={interest:prop.tax.dedInterest, afa:prop.tax.dedAfa, hausgeld:prop.tax.dedHausgeld, sev:prop.tax.dedSev, grundsteuer:prop.tax.dedGrundsteuer, other:prop.tax.dedOther, financing:prop.tax.dedFinancingOneOff||0};
+    RENO_LIMIT=prop.tax.renoLimit;
+    // projection (phase 2) defaults: assume today's rate continues until the contract term ends
+    if(!prop.refinance)prop.refinance={ratePct:prop.loan.ratePct,termEndYear:prop.loan.termEndYear,payment:0};
+    if(prop.refinance.ratePct==null)prop.refinance.ratePct=prop.loan.ratePct;
+    if(!prop.refinance.termEndYear)prop.refinance.termEndYear=prop.loan.termEndYear;
+    if(!CONTRACT_SNAP[prop.id])CONTRACT_SNAP[prop.id]={rate:prop.loan.ratePct,payment:prop.loan.payment};
+    baseRun=amortize(0);
+    BAL2035=baseRun.balAt2035;
+    SCHED=baseRun.yearly.filter(function(r){return r.y<=FIXEND;});
+    // UI state from per-property store (or property defaults)
+    var ui=lsGet(uiKey(prop.id))||{};
+    taxRate=(ui.tax!=null?ui.tax:prop.tax.marginalPct/100);
+    sonderAmt=(ui.sonder!=null?ui.sonder:prop.assumptions.sonderAnnual);
+    refiRate=prop.refinance.ratePct; // projection rate lives on the property, not in volatile ui state
+    idxRate=(ui.idx!=null?ui.idx:prop.assumptions.idxPct/100);
+    apprRate=(ui.appr!=null?ui.appr:prop.assumptions.apprPct/100);
+    renoSpent=(ui.reno!=null?ui.reno:(prop.reno&&prop.reno.spent)||0);
+  }
+  function saveUi(){ if(P) lsSet(uiKey(P.id),{tax:taxRate,sonder:sonderAmt,refi:refiRate,idx:idxRate,appr:apprRate,reno:renoSpent}); }
+
+  function fmtMonth(key){ if(!key)return ''; var p=key.split('-'); var mm=(LOCALE==='de'?MONTHS_DE:MONTHS_EN)[parseInt(p[1],10)-1]||''; return mm+' '+p[0]; }
+
+  function renderProp(){
+    var de=(P.country==='DE');
+    $('hdr-title').innerHTML=TL().hdrTitle(P.name);
+    $('hdr-sub').innerHTML=TL().hdrSub(P.address,P.loanRef,P.asOfMonth);
+    $('hero-anchor').textContent=TL().heroAnchor(P.purchase.price);
+    $('t-date').textContent=TL().tDate(FIXEND);
+    $('t-allow').textContent=eur(P.loan.sonderMax);
+    // monthly out
+    var now=P.asOfMonth||P.rent.firstMonth, hgNow=valueAt(P.costs.hausgeld,now), sevNow=valueAt(P.costs.sev,now);
+    $('m-mort').textContent='-'+eur2(MP);
+    $('m-hg').textContent='-'+eur2(hgNow); $('m-hg-note').textContent=P.hgNote||'';
+    $('m-sev').textContent='-'+eur2(sevNow);
+    $('m-out').textContent='-'+eur2(OUT_TOTAL);
+    $('m-gap').textContent=(GROSS_GAP<0?'-':'+')+eur2(Math.abs(GROSS_GAP));
+    // monthly in
+    var r0=P.rent.explicit[0]; for(var i=0;i<P.rent.explicit.length;i++){if(P.rent.explicit[i].from<=now)r0=P.rent.explicit[i];}
+    $('m-cold').textContent='+'+eur2(r0.cold);
+    $('m-bk').textContent='+'+eur2(r0.bk||0);
+    $('m-hk').textContent='+'+eur2(r0.hk||0);
+    $('m-warm').textContent='+'+eur2(r0.warm);
+    $('m-rentfrom').textContent=TL().mRentFrom(P.rent.firstMonth);
+    // refinance + sale + facts text
+    $('rf-owe').textContent=eur(baseRun.balAt2035);
+    $('rf-title').textContent=TL().rfTitle(FIXEND);
+    $('sale-base').textContent=eur(P.purchase.price);
+    $('sale-profit-l').textContent=TL().saleProfitL(P.purchase.saleYears);
+    // deductibles table
+    $('td-int').textContent=eur(DED.interest); $('td-afa').textContent=eur(DED.afa);
+    $('td-hg').textContent='~'+eur(DED.hausgeld); $('td-sev').textContent=eur(DED.sev);
+    $('td-gr').textContent='~'+eur(DED.grundsteuer); $('td-other').textContent='~'+eur(DED.other);
+    $('td-total').textContent='~'+eur(totalDed());
+    $('td-fin').textContent=eur(DED.financing); $('td-total-y1').textContent='~'+eur(totalDed()+DED.financing);
+    $('td-fin-save').textContent=eur(DED.financing*taxRate);
+    $('t-income').textContent='+'+eur(RENT_COLD*12);
+    // reno
+    $('reno-limit-v').textContent=eur(RENO_LIMIT); $('reno-window').textContent=P.tax.renoWindow||'first 3 years';
+    // overpay labels
+    $('ov-max').textContent=eur(P.loan.sonderMax); $('snum').max=P.loan.sonderMax; $('ssl').max=P.loan.sonderMax;
+    $('b-amt').textContent=deNum(sonderAmt);
+    // facts
+    $('f-loan').textContent=eur(P.loan.principal);
+    $('f-rate').textContent=deDec2(P.loan.ratePct)+'%';
+    $('f-eff').textContent=deDec2(effAnnual(P.loan.ratePct))+'%';
+    $('f-fixed').textContent=TL().fFixed(FIXEND);
+    $('f-pay').textContent=eur2(P.loan.payment);
+    $('f-sonder').textContent=TL().fSonder(P.loan.sonderMax);
+    $('f-price').textContent=eur(P.purchase.price);
+    var fc=''; (P.facts||[]).forEach(function(row){fc+='<div class="row"><span class="l">'+row[0]+'</span><span class="v">'+row[1]+'</span></div>';});
+    $('f-contacts').innerHTML=fc;
+    // jurisdiction gating (run first, then the no-facts case for the contacts card)
+    var deBlocks=document.querySelectorAll('[data-de]');
+    for(var j=0;j<deBlocks.length;j++){ deBlocks[j].className=deBlocks[j].className.replace(' hide',''); if(!de) deBlocks[j].className+=' hide'; }
+    if(!(de&&P.facts&&P.facts.length)) $('facts-contacts').className='card hide';
+    $('facts-generic-note').className='card'+(de?' hide':'');
+    // sliders to current values
+    $('reno').value=renoSpent;
+    // pills
+    renderPills();
+  }
+
+  // ===================== RENDER (numbers) =====================
+  function renderStanding(){var bal=LOAN;for(var m=0;m<ASOF_PAYMENTS;m++){bal-=(MP-bal*MR);}$('t-owe').textContent='~'+eur(bal);$('t-eq').textContent='~'+eur(LOAN-bal);$('t-date-sub').textContent=TL().tDateSub(Math.max(0,(FIXEND-START_YEAR)).toFixed(0));}
+  function setTax(v){
+    taxRate=parseInt(v,10)/100; $('tsl').value=v; $('tsl2').value=v;
+    var pc=deDec2(taxRate*100)+'%'; $('tsl-v').textContent=pc; $('tsl2-v').textContent=pc; $('tr-badge').textContent=TL().trBadge(pc);
+    var t=taxModel(taxRate);
+    $('m-tben').textContent='+~'+eur2(t.monthly);
+    var mn=$('m-net'),net=t.afterTaxNet; mn.textContent='~'+(net>=0?'+':'-')+eur2(Math.abs(net)); mn.style.color=net>=0?'var(--teal)':'var(--red)';
+    $('hero-net').innerHTML='~'+(net>=0?'+':'-')+eur2(Math.abs(net))+'<span style="font-size:1rem;font-weight:600">/month</span>';
+    $('hero-gross').textContent=eur2(GROSS_GAP);
+    $('t-ded').textContent='-'+eur(t.ded); $('t-res').textContent=(t.net<0?'-':'+')+eur(Math.abs(t.net)); $('t-save').textContent='+'+eur(t.saving); $('t-mo').textContent='+'+eur2(t.monthly);
+    var hy=$('h-y1at'); if(hy) hy.textContent='~'+eur2(sonderAmt*FIXR*(1-taxRate))+TL().afterTax;
+    refreshCashflow(); refreshSale();
+  }
+  function setSonder(v){
+    sonderAmt=Math.max(0,Math.min(parseInt(v,10)||0,SMAX)); $('ssl').value=sonderAmt; $('snum').value=sonderAmt;
+    var c=computeSonder(sonderAmt),opt=c.opt;
+    $('b-amt').textContent=deNum(sonderAmt); $('a-bal').textContent=eur(baseRun.balAt2035); $('b-bal').textContent=eur(opt.balAt2035);
+    $('a-int').textContent=eur(baseRun.totInt); $('b-int').textContent=eur(opt.totInt); $('a-pay').textContent=baseRun.payoffYear; $('b-pay').textContent=opt.payoffYear;
+    $('o-intsaved').textContent=eur(c.intSaved); $('o-yrs').textContent=TL().oYrs(sonderAmt===0?'0,0':deDec(c.yrsDec));
+    var tk=$('o-takeaway');
+    if(sonderAmt===0){tk.textContent=TL().ovTakeaway0;}
+    else{tk.innerHTML=TL().ovTakeaway(sonderAmt,c,opt,baseRun);}
+    $('h-amt').textContent=deNum(sonderAmt)+' €'; $('h-y1').textContent='~'+eur(sonderAmt*FIXR); $('h-y1at').textContent='~'+eur(sonderAmt*FIXR*(1-taxRate))+TL().afterTax;
+    $('h-2035').textContent='~'+eur(c.savedToFix); $('h-yrs').textContent=TL().hYrs(c.yrsDec,sonderAmt===0);
+    drawOverChart(baseRun,opt); buildSrOver(opt); refreshSale();
+  }
+  function setRate(v){
+    refiRate=parseFloat(v); $('rsl').value=v; $('rsl-v').textContent=deDec2(refiRate)+'%';
+    // the slider IS the projected follow-on rate: persist it and recompute the lifetime figures
+    P.refinance=P.refinance||{termEndYear:TERM_END,payment:0}; P.refinance.ratePct=refiRate; saveProp(P);
+    baseRun=amortize(0); BAL2035=baseRun.balAt2035; SCHED=baseRun.yearly.filter(function(r){return r.y<=FIXEND;});
+    var pay=projPayment(); $('r-pay').textContent='~'+eur2(pay);
+    var d=pay-MP,de=$('r-delta'); de.textContent=(d>=0?'+':'-')+eur2(Math.abs(d)); de.style.color=d>5?'var(--red)':(d<-5?'var(--teal)':'var(--navy)');
+    if($('refi-rate'))$('refi-rate').value=refiRate;
+    setSonder(sonderAmt); drawRateChart(pay); buildSrRate(pay); updateRefiSummary(); if(typeof renderRateScenarios==='function')renderRateScenarios(); refreshSale();
+  }
+  function refreshCashflow(){
+    var proj=projectYears(idxRate); drawCashflow(proj); buildSrCf(proj);
+    var a=proj[0],z=proj[proj.length-1];
+    $('cf-summary').innerHTML=TL().cfSummary(idxRate*100,a,z,FIXEND);
+  }
+  function setIndex(v){idxRate=parseFloat(v)/100;$('idx').value=v;$('idx-v').textContent=deDec2(idxRate*100)+'%';refreshCashflow();refreshSale();}
+  function refreshSale(){
+    var s=saleScenario(apprRate);
+    $('sale-profit').textContent='~'+eur(s.profit); $('s-worth').textContent='~'+eur(s.saleValue); $('s-loan').textContent='~'+eur(s.loanLeft);
+    $('s-equity').textContent='~'+eur(s.equity); $('s-in').textContent='~'+eur(s.cashIn);
+    $('br-sale').textContent='+'+eur(s.saleValue); $('br-cost').textContent='-'+eur(s.sellCosts); $('br-loan').textContent='-'+eur(s.loanLeft);
+    $('br-net').textContent=eur(s.netProceeds); $('br-in').textContent='-'+eur(s.cashIn); $('br-profit').textContent=eur(s.profit);
+    var pL=s.loanLeft/s.saleValue*100,pC=s.sellCosts/s.saleValue*100,pN=Math.max(0,s.netProceeds)/s.saleValue*100;
+    $('sb-loan').style.width=pL+'%'; $('sb-cost').style.width=pC+'%'; $('sb-net').style.width=pN+'%';
+    $('sb-loan').textContent=pL>16?'Loan '+eur(s.loanLeft):''; $('sb-cost').textContent=pC>9?eur(s.sellCosts):''; $('sb-net').textContent=pN>16?'To you '+eur(s.netProceeds):'';
+    var rows='';[0,0.01,0.02,0.03,0.04,0.05].forEach(function(gg){var sc=saleScenario(gg);rows+='<tr'+(Math.abs(gg-apprRate)<0.0005?' class="hl"':'')+'><td>'+deDec2(gg*100)+' %</td><td class="tnum">'+eur(sc.saleValue)+'</td><td class="tnum">'+eur(sc.profit)+'</td></tr>';});
+    $('sens-body').innerHTML=rows;
+  }
+  function setAppr(v){apprRate=parseFloat(v)/100;$('apr').value=v;$('apr-v').textContent=deDec2(apprRate*100)+'%';refreshSale();}
+  function setReno(v,sync){
+    renoSpent=Math.max(0,parseFloat(v)||0); if(sync){var el=$('reno');if(el)el.value=renoSpent;}
+    var pct=renoSpent/RENO_LIMIT*100; $('reno-left').textContent=eur(renoLeft(renoSpent));
+    var fill=$('reno-fill'); fill.style.width=Math.min(100,pct)+'%'; fill.style.background=pct>100?'var(--red)':(pct>80?'var(--gold)':'var(--teal)');
+    $('reno-pct').textContent=TL().renoPct(renoSpent,RENO_LIMIT,pct);
+    var note=$('reno-note');
+    if(pct>100){note.className='note risk';note.textContent=TL().renoOver;}
+    else if(pct>80){note.className='note warn';note.textContent=TL().renoWarn(pct);}
+    else{note.className='note warn';note.textContent=TL().renoOk;}
+    saveUi();
+  }
+  function toggleHelp(){$('helpdr').classList.toggle('on');$('helpov').classList.toggle('on');}
+
+  // ===================== screen-reader tables =====================
+  function srTable(cap,hdr,rows){var h='<table><caption>'+cap+'</caption><thead><tr>';hdr.forEach(function(x){h+='<th>'+x+'</th>';});h+='</tr></thead><tbody>';rows.forEach(function(r){h+='<tr>';r.forEach(function(c){h+='<td>'+c+'</td>';});h+='</tr>';});return h+'</tbody></table>';}
+  function buildStaticSr(){var S=TL().srSplit,B=TL().srBal;$('sr-split').innerHTML=srTable(S[0],S[1],SCHED.map(function(d){return [d.y,eur(d.i/12),eur(d.p/12)];}));$('sr-bal').innerHTML=srTable(B[0],B[1],SCHED.map(function(r){return [r.y,eur(r.end)];}));}
+  function buildSrOver(opt){var O=TL().srOver;$('sr-over').innerHTML=srTable(O[0],O[1],SCHED.map(function(r,i){var o=opt.yearly[i];return [r.y,eur(r.end),o?eur(o.end):'-'];}));}
+  function buildSrRate(pay){var fbr=(P.loan.varRatePct>0?P.loan.varRatePct:(FIXR*100+1.5));var R=TL().srRate;$('sr-rate').innerHTML=srTable(R[0],R[1],[[TL().srToday,eur2(MP)],[TL().srNew(deDec2(refiRate)),eur2(pay)],[TL().srFallback(deDec2(fbr)),eur2(refiPayment(fbr/100))]]);}
+  function buildSrCf(proj){var F=TL().srCf;$('sr-cf').innerHTML=srTable(F[0],F[1],proj.map(function(d){return [d.y,eur2(d.warm),eur2(d.out),eur2(d.grossNet),eur2(d.afterTax)];}));}
+
+  // ===================== canvas =====================
+  var C={slate:'#94a3b8',teal:'#0d9488',blue:'#2563eb',red:'#dc2626',grid:'#e3e8ef',txt:'#64748b'};
+  function setup(id,cssH){var cv=$(id);if(!cv)return null;var dpr=window.devicePixelRatio||1;var cssW=cv.clientWidth||cv.parentElement.clientWidth||680;cv.width=Math.round(cssW*dpr);cv.height=Math.round(cssH*dpr);cv.style.height=cssH+'px';var ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,cssW,cssH);return {ctx:ctx,w:cssW,h:cssH};}
+  function drawGridY(ctx,o){ctx.font='11px system-ui';ctx.textAlign='right';ctx.lineWidth=1;o.vals.forEach(function(v){if(o.clip&&v>o.max)return;var y=o.pT+o.ch-(v/o.max)*o.ch;ctx.strokeStyle=C.grid;ctx.beginPath();ctx.moveTo(o.pL,y);ctx.lineTo(o.right,y);ctx.stroke();ctx.fillStyle=C.txt;ctx.fillText(o.fmt(v),o.pL-6,y+4);});}
+  var REG={},TIP=null;
+  function regClear(id){REG[id]=[];}
+  function regAdd(id,r){(REG[id]=REG[id]||[]).push(r);}
+  function ensureTip(){if(!TIP){TIP=document.createElement('div');TIP.className='chart-tip';document.body.appendChild(TIP);}}
+  function showTip(cx,cy,html){ensureTip();TIP.innerHTML=html;TIP.classList.add('on');var ox=cx+15,oy=cy+16,tw=TIP.offsetWidth,th=TIP.offsetHeight;if(ox+tw>window.innerWidth-8)ox=cx-tw-15;if(oy+th>window.innerHeight-8)oy=cy-th-16;TIP.style.left=ox+'px';TIP.style.top=oy+'px';}
+  function hideTip(){if(TIP)TIP.classList.remove('on');}
+  function hitTest(id,mx,my){var rs=REG[id]||[];for(var i=0;i<rs.length;i++){var r=rs[i];if(mx>=r.x&&mx<=r.x+r.w&&my>=r.y&&my<=r.y+r.h)return r;}return null;}
+  function attachTip(id){var cv=$(id);if(!cv||cv._tip)return;cv._tip=1;cv.style.cursor='crosshair';cv.addEventListener('mousemove',function(e){var b=cv.getBoundingClientRect(),hit=hitTest(id,e.clientX-b.left,e.clientY-b.top);if(hit)showTip(e.clientX,e.clientY,hit.html);else hideTip();});cv.addEventListener('mouseleave',hideTip);cv.addEventListener('touchstart',function(e){var t=e.touches[0],b=cv.getBoundingClientRect(),hit=hitTest(id,t.clientX-b.left,t.clientY-b.top);if(hit){showTip(t.clientX,t.clientY,hit.html);setTimeout(hideTip,2600);}},{passive:true});}
+
+  function drawSplit(){
+    var s=setup('splitChart',320);if(!s)return;var ctx=s.ctx,w=s.w,h=s.h;
+    var n=SCHED.length||1, pL=70,pR=18,pT=26,pB=50,cw=w-pL-pR,ch=h-pT-pB,gap=cw/n,bw=Math.min(70,gap*0.62);
+    var topV=Math.ceil(MP/100)*100;
+    ctx.fillStyle=C.txt;ctx.font='11px system-ui';ctx.textAlign='left';ctx.fillText('per month',pL-2,pT-10);
+    drawGridY(ctx,{vals:[0,topV*0.25,topV*0.5,topV*0.75,topV],max:topV,pL:pL,right:w-pR,pT:pT,ch:ch,fmt:function(v){return Math.round(v)+' €';}});
+    var dense=gap<52; regClear('splitChart');
+    SCHED.forEach(function(d,i){
+      var mi=d.i/12,mp=d.p/12,x=pL+i*gap+(gap-bw)/2,ih=(mi/topV)*ch,ph=(mp/topV)*ch;
+      ctx.fillStyle=C.slate;ctx.fillRect(x,pT+ch-ih-ph,bw,ih);ctx.fillStyle=C.teal;ctx.fillRect(x,pT+ch-ph,bw,ph);
+      if(!dense||i%3===0){ctx.fillStyle='#16202c';ctx.font='bold 13px system-ui';ctx.textAlign='center';ctx.fillText(d.y,x+bw/2,h-pB+22);}
+      regAdd('splitChart',{x:pL+i*gap,y:pT,w:gap,h:ch,html:TL().tipSplit(d.y,mp,mi)});
+    });
+    attachTip('splitChart');
+  }
+  function drawBalLine(canvasId,runs){
+    var s=setup(canvasId,230);if(!s)return;var ctx=s.ctx,w=s.w,h=s.h;
+    var pL=60,pR=14,pT=16,pB=30,cw=w-pL-pR,ch=h-pT-pB,x0=START_YEAR-0.08,x1=FIXEND,xr=(x1-x0)||1;
+    var topV=Math.ceil(LOAN/50000)*50000;
+    drawGridY(ctx,{vals:[0,topV*0.25,topV*0.5,topV*0.75,topV],max:topV,pL:pL,right:w-pR,pT:pT,ch:ch,fmt:eurK});
+    function px(yr){return pL+((yr-x0)/xr)*cw;}function py(b){return pT+ch-(b/topV)*ch;}
+    runs.forEach(function(run){var pts=[{y:x0,end:LOAN}].concat(run.data.filter(function(r){return r.y<=FIXEND;}).map(function(r){return {y:r.y,end:r.end};}));ctx.strokeStyle=run.color;ctx.lineWidth=2.5;ctx.beginPath();pts.forEach(function(p,i){var X=px(p.y),Y=py(p.end);if(i===0)ctx.moveTo(X,Y);else ctx.lineTo(X,Y);});ctx.stroke();ctx.fillStyle=run.color;pts.forEach(function(p){if(p.y>=START_YEAR){ctx.beginPath();ctx.arc(px(p.y),py(p.end),3,0,TAU);ctx.fill();}});});
+    SCHED.forEach(function(d){if(d.y%2===0||d.y===FIXEND){ctx.fillStyle=C.txt;ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText(d.y,px(d.y),h-pB+14);}});
+    var xm=px(FIXEND);ctx.strokeStyle=C.red;ctx.lineWidth=2;ctx.setLineDash([5,3]);ctx.beginPath();ctx.moveTo(xm,pT);ctx.lineTo(xm,pT+ch);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.red;ctx.font='bold 10px system-ui';ctx.textAlign='right';ctx.fillText(FIXEND,xm-3,pT+9);
+    regClear(canvasId);var step=px(START_YEAR+1)-px(START_YEAR);
+    SCHED.forEach(function(d){var b0=null,b1=null;runs[0].data.forEach(function(r){if(r.y===d.y)b0=r.end;});if(runs[1])runs[1].data.forEach(function(r){if(r.y===d.y)b1=r.end;});if(b0==null)return;var html=(runs.length===2&&b1!=null)?TL().tipBalBoth(d.y,b0,b1):TL().tipBalOne(d.y,b0);regAdd(canvasId,{x:px(d.y)-step/2,y:pT,w:step,h:ch,html:html});});
+    attachTip(canvasId);
+  }
+  function drawOverChart(base,opt){drawBalLine('overChart',[{data:base.yearly,color:C.slate},{data:opt.yearly,color:C.teal}]);}
+  function drawBal(){drawBalLine('balChart',[{data:baseRun.yearly,color:C.blue}]);}
+  function drawRateChart(newPay){
+    var s=setup('rateChart',210);if(!s)return;var ctx=s.ctx,w=s.w,h=s.h;var pL=60,pR=14,pT=16,pB=42,cw=w-pL-pR,ch=h-pT-pB;
+    var fbr=(P.loan.varRatePct>0?P.loan.varRatePct:(FIXR*100+1.5));var fb=refiPayment(fbr/100);var bars=[{l:TL().barToday,v:MP,c:C.teal},{l:TL().barNew,v:newPay,c:C.blue},{l:TL().barNothing,v:fb,c:C.red}];var maxV=Math.max(MP,newPay,fb)*1.15;
+    var step=Math.ceil(maxV/4/100)*100;drawGridY(ctx,{vals:[0,step,step*2,step*3,step*4],max:maxV,clip:true,pL:pL,right:w-pR,pT:pT,ch:ch,fmt:function(v){return Math.round(v)+' €';}});
+    var gap=cw/bars.length,bw=Math.min(90,gap*0.5);regClear('rateChart');
+    bars.forEach(function(b,i){var x=pL+i*gap+(gap-bw)/2,bh=(b.v/maxV)*ch;ctx.fillStyle=b.c;ctx.fillRect(x,pT+ch-bh,bw,bh);ctx.fillStyle=C.txt;ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillText(b.l,x+bw/2,h-pB+15);ctx.fillStyle='#16202c';ctx.font='bold 11px system-ui';ctx.fillText(eur2(b.v),x+bw/2,pT+ch-bh-6);var dd=b.v-MP;regAdd('rateChart',{x:pL+i*gap,y:pT,w:gap,h:ch,html:TL().tipRate(b.l,b.v,dd)});});
+    attachTip('rateChart');
+  }
+  function drawCashflow(proj){
+    var s=setup('cashflowChart',260);if(!s)return;var ctx=s.ctx,w=s.w,h=s.h;
+    var pL=64,pR=16,pT=18,pB=34,cw=w-pL-pR,ch=h-pT-pB;
+    var vals=[];proj.forEach(function(d){vals.push(d.grossNet,d.afterTax);});
+    var ymin=Math.min.apply(null,vals),ymax=Math.max.apply(null,vals);
+    ymin=Math.floor(Math.min(ymin,-100)/100)*100-30;ymax=Math.ceil(Math.max(ymax,0)/100)*100+20;
+    function px(i){return pL+(proj.length<2?0:i/(proj.length-1)*cw);}
+    function py(v){return pT+ch-((v-ymin)/(ymax-ymin))*ch;}
+    ctx.font='11px system-ui';ctx.textAlign='right';
+    for(var gv=Math.ceil(ymin/100)*100;gv<=ymax;gv+=100){var y=py(gv);ctx.strokeStyle=(gv===0?'#aebccb':C.grid);ctx.lineWidth=(gv===0?1.5:1);ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(w-pR,y);ctx.stroke();ctx.fillStyle=C.txt;ctx.fillText(gv+' €',pL-6,y+4);}
+    function line(key,color){ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.beginPath();proj.forEach(function(d,i){var X=px(i),Y=py(d[key]);if(i===0)ctx.moveTo(X,Y);else ctx.lineTo(X,Y);});ctx.stroke();ctx.fillStyle=color;proj.forEach(function(d,i){ctx.beginPath();ctx.arc(px(i),py(d[key]),3,0,TAU);ctx.fill();});}
+    line('grossNet',C.slate);line('afterTax',C.teal);
+    ctx.fillStyle=C.txt;ctx.textAlign='center';ctx.font='10px system-ui';
+    proj.forEach(function(d,i){if(d.y%2===0||d.y===FIXEND)ctx.fillText(d.y,px(i),h-pB+14);});
+    regClear('cashflowChart');var step=cw/((proj.length-1)||1);
+    proj.forEach(function(d,i){regAdd('cashflowChart',{x:px(i)-step/2,y:pT,w:step,h:ch,html:TL().tipCf(d)});});
+    attachTip('cashflowChart');
+  }
+  function drawAll(){drawSplit();drawBal();drawOverChart(baseRun,amortize(sonderAmt,curEvents()));drawRateChart(projPayment());refreshCashflow();refreshSale();}
+  function recomputeAndRefresh(){baseRun=amortize(0);BAL2035=baseRun.balAt2035;SCHED=baseRun.yearly.filter(function(r){return r.y<=FIXEND;});setSonder(sonderAmt);setRate(refiRate);refreshSale();refreshCashflow();updateRefiSummary();requestAnimationFrame(drawAll);}
+
+  // ----- one-off Sondertilgung events -----
+  function renderOneOffs(){
+    P.loan.sonderEvents=P.loan.sonderEvents||[];
+    var ev=P.loan.sonderEvents;
+    $('oneoff-list').innerHTML=ev.map(function(e,i){return '<div class="drow"><input type="month" value="'+e.from+'" data-oo="from" data-i="'+i+'"><input type="number" min="0" step="500" value="'+e.amount+'" data-oo="amount" data-i="'+i+'"> &euro; <button class="wbtn sec" data-oodel="'+i+'" style="padding:4px 8px">'+TL().mg.remove+'</button></div>';}).join('');
+    [].slice.call($('oneoff-list').querySelectorAll('[data-oo]')).forEach(function(inp){inp.addEventListener('change',commitOneOffs);});
+    [].slice.call($('oneoff-list').querySelectorAll('[data-oodel]')).forEach(function(b){b.addEventListener('click',function(){P.loan.sonderEvents.splice(+b.getAttribute('data-oodel'),1);saveProp(P);renderOneOffs();recomputeAndRefresh();});});
+    validateOneOffs();
+  }
+  function commitOneOffs(){
+    var rows={};[].slice.call($('oneoff-list').querySelectorAll('[data-oo]')).forEach(function(inp){var i=inp.getAttribute('data-i'),f=inp.getAttribute('data-oo');rows[i]=rows[i]||{};rows[i][f]=(f==='amount')?(parseFloat(inp.value)||0):inp.value;});
+    P.loan.sonderEvents=Object.keys(rows).map(function(i){return {from:rows[i].from,amount:rows[i].amount};}).filter(function(e){return e.from;});
+    P.loan.sonderEvents.sort(function(a,b){return a.from<b.from?-1:1;});
+    saveProp(P);recomputeAndRefresh();validateOneOffs();
+  }
+  function addOneOff(){P.loan.sonderEvents=P.loan.sonderEvents||[];var y=Math.min(FIXEND,START_YEAR+1);P.loan.sonderEvents.push({from:y+'-01',amount:5000});saveProp(P);renderOneOffs();recomputeAndRefresh();}
+  function validateOneOffs(){
+    var perYear={};(P.loan.sonderEvents||[]).forEach(function(e){var y=(e.from||'').split('-')[0];if(y)perYear[y]=(perYear[y]||0)+(e.amount||0);});
+    var msgs=[];Object.keys(perYear).forEach(function(y){var yy=+y,tot=perYear[y]+((yy>=START_YEAR+1&&yy<=FIXEND)?sonderAmt:0);if(SMAX>0&&tot>SMAX+0.5){msgs.push(TL().ooMsg(y,tot,SMAX));}});
+    var w=$('oneoff-warn');if(msgs.length){w.style.display='';w.innerHTML=TL().ooWarn(msgs.join('<br>'));}else{w.style.display='none';}
+  }
+
+  // ----- refinance (Anschlussfinanzierung) terms -----
+  var CONTRACT_SNAP={}; // per-property snapshot of the original fixed rate + payment, for "reset to contract"
+  function renderRefi(){
+    P.refinance=P.refinance||{ratePct:P.loan.ratePct,termEndYear:P.loan.termEndYear,payment:0};
+    if(P.refinance.ratePct==null)P.refinance.ratePct=P.loan.ratePct;
+    var r=P.refinance;
+    $('refi-cur').value=P.loan.ratePct;
+    $('refi-rate').value=r.ratePct;
+    $('refi-end').value=r.termEndYear||P.loan.termEndYear;
+    $('refi-pay').value=r.payment>0?r.payment:'';
+    $('rf-fixend').textContent=FIXEND;
+    updateRefiSummary();
+    renderRateScenarios();
+  }
+  function commitRefi(){
+    P.refinance=P.refinance||{};var r=P.refinance;
+    // current fixed rate edit: recompute the monthly payment and rebuild the engine
+    var newCur=parseFloat($('refi-cur').value);
+    if(!isNaN(newCur)&&Math.abs(newCur-P.loan.ratePct)>1e-9){
+      P.loan.ratePct=newCur;
+      P.loan.payment=annuity(P.loan.principal,newCur/100/12,Math.max(1,(P.loan.termEndYear-P.loan.startYear)*12));
+      saveProp(P);setEngineFrom(P);renderAllForActive();return;
+    }
+    r.ratePct=parseFloat($('refi-rate').value); if(isNaN(r.ratePct))r.ratePct=P.loan.ratePct;
+    r.termEndYear=Math.round(parseFloat($('refi-end').value)||P.loan.termEndYear);
+    if(r.termEndYear<=FIXEND)r.termEndYear=FIXEND+1;
+    r.payment=parseFloat($('refi-pay').value)||0;
+    refiRate=r.ratePct;$('rsl').value=r.ratePct;$('rsl-v').textContent=deDec2(r.ratePct)+'%';
+    saveProp(P);recomputeAndRefresh();renderRateScenarios();
+  }
+  function resetRefi(){
+    var snap=CONTRACT_SNAP[P.id];
+    if(snap){P.loan.ratePct=snap.rate;P.loan.payment=snap.payment;}
+    P.refinance={ratePct:P.loan.ratePct,termEndYear:P.loan.termEndYear,payment:0};
+    refiRate=P.loan.ratePct;
+    saveProp(P);setEngineFrom(P);renderAllForActive();
+  }
+  function updateRefiSummary(){
+    if(!$('refi-summary'))return;
+    var r=P.refinance,opt=amortize(sonderAmt,curEvents()),handover=opt.balAt2035;
+    var years=(r.termEndYear||P.loan.termEndYear)-FIXEND,mr=r.ratePct/100/12;
+    var pay=r.payment>0?r.payment:annuity(handover,mr,Math.max(1,years*12));
+    var coversInt=pay>handover*mr;
+    var sameRate=Math.abs(r.ratePct-FIXR*100)<1e-9;
+    $('refi-r-pay').textContent='~'+eur2(pay);
+    $('refi-r-payoff').textContent=opt.payoffYear;
+    $('refi-summary').innerHTML=TL().refiSummary(r.ratePct,years,handover,pay,opt.payoffYear,sameRate,coversInt);
+  }
+  function renderRateScenarios(){
+    if(!$('refi-scen'))return;
+    var endY=(P.refinance&&P.refinance.termEndYear)||P.loan.termEndYear;
+    var baseInt=amortize(sonderAmt,curEvents(),{ratePct:FIXR*100,termEndYear:endY,payment:0}).totInt;
+    var rates=[FIXR*100,5,6,8];var seen={};var rows='';
+    rates.forEach(function(rp){var key=rp.toFixed(2);if(seen[key])return;seen[key]=1;
+      var run=amortize(sonderAmt,curEvents(),{ratePct:rp,termEndYear:endY,payment:0});
+      var d=run.totInt-baseInt;var hl=(P.refinance&&Math.abs(P.refinance.ratePct-rp)<0.005)?' class="hl"':'';
+      rows+='<tr'+hl+'><td>'+deDec2(rp)+' %'+(Math.abs(rp-FIXR*100)<1e-9?TL().refiNow:'')+'</td><td class="tnum">'+run.payoffYear+'</td><td class="tnum">'+eur(run.totInt)+'</td><td class="tnum">'+(Math.abs(d)<1?'-':((d>0?'+':'-')+eur(Math.abs(d))))+'</td></tr>';
+    });
+    $('refi-scen').innerHTML=rows;
+  }
+
+  // ===================== tabs =====================
+  var tabBtns=[];
+  function selectTab(i){tabBtns.forEach(function(btn,j){var sel=(j===i);btn.classList.toggle('on',sel);btn.setAttribute('aria-selected',sel?'true':'false');btn.tabIndex=sel?0:-1;$(btn.getAttribute('aria-controls')).classList.toggle('on',sel);});try{tabBtns[i].scrollIntoView({inline:'nearest',block:'nearest'});}catch(e){}requestAnimationFrame(drawAll);}
+  function wireTabs(){tabBtns=[].slice.call(document.querySelectorAll('.tabs .tb'));tabBtns.forEach(function(btn,idx){btn.addEventListener('click',function(){selectTab(idx);});btn.addEventListener('keydown',function(e){var n=tabBtns.length,t=null;if(e.key==='ArrowRight'||e.key==='ArrowDown')t=(idx+1)%n;else if(e.key==='ArrowLeft'||e.key==='ArrowUp')t=(idx-1+n)%n;else if(e.key==='Home')t=0;else if(e.key==='End')t=n-1;if(t!==null){e.preventDefault();selectTab(t);tabBtns[t].focus();}});});}
+
+  function renderAllForActive(){renderProp();renderStanding();setTax(Math.round(taxRate*100));setSonder(sonderAmt);setRate(refiRate);setIndex(idxRate*100);setAppr(apprRate*100);setReno(renoSpent,true);renderOneOffs();renderRefi();buildStaticSr();requestAnimationFrame(drawAll);}
+
+  // ===================== property switching =====================
+  function renderPills(){
+    var idx=getIndex(); var html='';
+    idx.order.forEach(function(o){ html+='<button class="proppill'+(o.id===idx.activeId?' on':'')+'" data-pid="'+o.id+'" role="tab" aria-selected="'+(o.id===idx.activeId)+'">'+o.name+'</button>'; });
+    $('prop-pills').innerHTML=html;
+    [].slice.call($('prop-pills').querySelectorAll('.proppill')).forEach(function(b){ b.addEventListener('click',function(){ switchTo(b.getAttribute('data-pid')); }); });
+    $('prop-delete').style.display=(idx.order.length>1)?'':'none';
+  }
+  function switchTo(id){var idx=getIndex();var prop=loadProp(id);if(!prop)return;idx.activeId=id;lsSet(IDX_KEY,idx);setEngineFrom(prop);renderAllForActive();}
+  function addPropertyObj(prop){var idx=getIndex();saveProp(prop);idx.order.push({id:prop.id,name:prop.name});idx.activeId=prop.id;lsSet(IDX_KEY,idx);setEngineFrom(prop);renderAllForActive();}
+  function deleteActive(){var idx=getIndex();if(idx.order.length<=1){alert(TL().alertOnlyProp);return;}var name=P.name;var typed=prompt(TL().promptDelete(name));if(typed!==name){if(typed!=null)alert(TL().alertNameMismatch);return;}lsDel(propKey(P.id));lsDel(uiKey(P.id));idx.order=idx.order.filter(function(o){return o.id!==P.id;});idx.activeId=idx.order[0].id;lsSet(IDX_KEY,idx);switchTo(idx.activeId);}
+
+  // ===================== export / import =====================
+  function exportActive(){try{var blob=new Blob([JSON.stringify(P,null,2)],{type:'application/json'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=(P.name||'property').replace(/[^a-z0-9]+/gi,'-')+'.json';document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(url);},1000);}catch(e){alert(TL().alertExportFail(e.message));}}
+  function importFile(file){var fr=new FileReader();fr.onload=function(){try{var obj=JSON.parse(fr.result);if(!validateProp(obj)){alert(TL().alertBadFile);return;}obj.id=newId();var base=obj.name||'Imported';var names=getIndex().order.map(function(o){return o.name;});if(names.indexOf(base)>=0)obj.name=base+TL().importedSuffix;addPropertyObj(obj);alert(TL().alertImported(obj.name));}catch(e){alert(TL().alertReadFail(e.message));}};fr.readAsText(file);}
+  function validateProp(o){return o&&o.loan&&o.purchase&&o.rent&&o.tax&&o.costs&&o.costs.hausgeld&&o.costs.sev&&o.costs.hausgeld.length&&o.costs.sev.length&&typeof o.loan.principal==='number'&&o.loan.principal>0&&o.rent.explicit&&o.rent.explicit.length>0&&typeof o.rent.explicit[0].cold==='number';}
+
+  // ===================== setup wizard =====================
+  var WZ=null, wzStep=0, WZ_COUNT=7;
+  function wzSteps(){var W=TL().wiz;return [
+    {t:W.t[0], f:function(d){return [
+      fld(W.name,'wz_name','text',d.name||'',true,W.name_h),
+      fld(W.addr,'wz_addr','text',d.address||'',false,''),
+      fld(W.country,'wz_country','text',d.country||'DE',false,W.country_h)
+    ].join('');}},
+    {t:W.t[1], f:function(d){return [
+      fld(W.price,'wz_price','number',d.purchase.price,true,W.price_h),
+      fld(W.ek,'wz_ek','number',d.purchase.eigenkapital,false,''),
+      fld(W.pc,'wz_pc','number',d.purchase.purchaseCosts,false,W.pc_h),
+      fld(W.sc,'wz_sc','number',d.purchase.sellCostPct,false,W.sc_h)
+    ].join('');}},
+    {t:W.t[2], f:function(d){return [
+      fld(W.loan,'wz_loan','number',d.loan.principal,true,''),
+      fld(W.rate,'wz_rate','number',d.loan.ratePct,true,W.rate_h),
+      fld(W.pay,'wz_pay','number',d.loan.payment,true,W.pay_h),
+      fld(W.sy,'wz_sy','number',d.loan.startYear,true,''),
+      fld(W.fix,'wz_fix','number',d.loan.fixedUntilYear,true,''),
+      fld(W.term,'wz_term','number',d.loan.termEndYear,true,''),
+      fld(W.smax,'wz_smax','number',d.loan.sonderMax,false,'')
+    ].join('');}},
+    {t:W.t[3], f:function(d){return [
+      fld(W.hg,'wz_hg','number',valueAt(d.costs.hausgeld,d.asOfMonth),false,''),
+      fld(W.sev,'wz_sev','number',valueAt(d.costs.sev,d.asOfMonth),false,''),
+      '<p class="fh" style="margin-top:8px">'+W.costs_note+'</p>'
+    ].join('');}},
+    {t:W.t[4], f:function(d){var r=d.rent.explicit[0];return [
+      fld(W.rfrom,'wz_rfrom','month',r.from,false,''),
+      fld(W.cold,'wz_cold','number',r.cold,true,''),
+      fld(W.warm,'wz_warm','number',r.warm,true,W.warm_h),
+      fld(W.idx,'wz_idx','number',d.assumptions.idxPct,false,W.idx_h)
+    ].join('');}},
+    {t:W.t[5], f:function(d){return [
+      fld(W.tax,'wz_tax','number',d.tax.marginalPct,false,W.tax_h),
+      fld(W.afa,'wz_afa','number',d.tax.dedAfa,false,''),
+      fld(W.dhg,'wz_dhg','number',d.tax.dedHausgeld,false,''),
+      fld(W.dgr,'wz_dgr','number',d.tax.dedGrundsteuer,false,''),
+      fld(W.dint,'wz_dint','number',d.tax.dedInterest,false,W.dint_h),
+      fld(W.reno,'wz_reno','number',d.tax.renoLimit,false,W.reno_h)
+    ].join('');}},
+    {t:W.t[6], f:function(d){return [
+      fld(W.appr,'wz_appr','number',d.assumptions.apprPct,false,W.appr_h),
+      fld(W.sonder,'wz_sonder','number',d.assumptions.sonderAnnual,false,'')
+    ].join('');}}
+  ];}
+  function fld(label,id,type,val,req,help){return '<div class="field"><label for="'+id+'">'+label+(req?' *':'')+'</label><input id="'+id+'" type="'+type+'" value="'+(val==null?'':val)+'">'+(help?'<div class="fh">'+help+'</div>':'')+'</div>';}
+  function blankProperty(){
+    var sy=2026; // a clean, neutral property; NOTHING is cloned from the sample (no condoBonus, asOfPayments, varRate leaks)
+    return {
+      schema:1, id:newId(), name:'New property', country:'DE', currency:'EUR', address:'', loanRef:'',
+      asOfMonth:sy+'-01', asOfPayments:0,
+      loan:{principal:0, ratePct:0, payment:0, startYear:sy, fixedUntilYear:sy+10, termEndYear:sy+30, sonderMax:0, varRatePct:0, sonderEvents:[]},
+      refinance:{ratePct:null, termEndYear:sy+30, payment:0},
+      purchase:{price:0, eigenkapital:0, purchaseCosts:0, condoBonus:0, sellCostPct:3.57, saleYears:10, notaryDate:'', taxFreeFrom:''},
+      costs:{ hausgeld:[{from:sy+'-01',value:0}], sev:[{from:sy+'-01',value:0}] }, hgNote:'',
+      rent:{ firstMonth:sy+'-01', firstFullStepYear:sy+2, explicit:[{from:sy+'-01',cold:0,warm:0,bk:0,hk:0}] },
+      tax:{ marginalPct:42, dedInterest:0, dedAfa:0, dedHausgeld:0, dedSev:0, dedGrundsteuer:0, dedOther:0, dedFinancingOneOff:0, renoLimit:1, renoWindow:'first 3 years' },
+      assumptions:{ idxPct:2, apprPct:2, sonderAnnual:0, refiPct:4.5 },
+      reno:{spent:0}, facts:[], contractTable:null
+    };
+  }
+  function openWizard(){WZ=blankProperty();wzStep=0;$('wz-h').textContent=TL().wizAddTitle;renderWizard();$('wzdr').classList.add('on');$('wzov').classList.add('on');}
+  function closeWizard(){$('wzdr').classList.remove('on');$('wzov').classList.remove('on');}
+  function renderWizard(){var st=wzSteps()[wzStep];$('wz-body').innerHTML='<h2 style="font-size:.95rem;margin-bottom:6px">'+(wzStep+1)+'. '+st.t+'</h2>'+st.f(WZ);$('wz-bar').style.width=Math.round((wzStep+1)/WZ_COUNT*100)+'%';$('wz-back').disabled=(wzStep===0);$('wz-next').textContent=(wzStep===WZ_COUNT-1)?TL().wizFinish:TL().wizContinue;$('wz-savefin').style.display=(wzStep>=2)?'':'none';}
+  function wzCollect(){
+    var g=function(id){var e=$(id);return e?e.value:null;};var num=function(id,dflt){var v=parseFloat(g(id));return isNaN(v)?dflt:v;};
+    if(wzStep===0){WZ.name=g('wz_name')||WZ.name;WZ.address=g('wz_addr')||'';WZ.country=(g('wz_country')||'DE').toUpperCase();}
+    else if(wzStep===1){WZ.purchase.price=num('wz_price',WZ.purchase.price);WZ.purchase.eigenkapital=num('wz_ek',0);WZ.purchase.purchaseCosts=num('wz_pc',0);WZ.purchase.sellCostPct=num('wz_sc',3.57);}
+    else if(wzStep===2){WZ.loan.principal=num('wz_loan',WZ.loan.principal);WZ.loan.ratePct=num('wz_rate',WZ.loan.ratePct);WZ.loan.payment=num('wz_pay',WZ.loan.payment);WZ.loan.startYear=Math.round(num('wz_sy',2026));WZ.loan.fixedUntilYear=Math.round(num('wz_fix',2035));WZ.loan.termEndYear=Math.round(num('wz_term',2057));WZ.loan.sonderMax=num('wz_smax',0);}
+    else if(wzStep===3){var hg=num('wz_hg',0),sev=num('wz_sev',0);var fm=(WZ.loan.startYear)+'-01';WZ.costs.hausgeld=[{from:fm,value:hg}];WZ.costs.sev=[{from:fm,value:sev}];WZ.asOfMonth=fm;}
+    else if(wzStep===4){var rf=g('wz_rfrom')||((WZ.loan.startYear)+'-01');var cold=num('wz_cold',0),warm=num('wz_warm',0);WZ.rent.firstMonth=rf;WZ.rent.firstFullStepYear=yearOfFrom(rf)+2;WZ.rent.explicit=[{from:rf,cold:cold,warm:warm,bk:Math.max(0,Math.round((warm-cold)*0.6)),hk:Math.max(0,Math.round((warm-cold)*0.4))}];WZ.assumptions.idxPct=num('wz_idx',2);WZ.asOfMonth=rf;}
+    else if(wzStep===5){WZ.tax.marginalPct=num('wz_tax',42);WZ.tax.dedAfa=num('wz_afa',0);WZ.tax.dedHausgeld=num('wz_dhg',0);WZ.tax.dedGrundsteuer=num('wz_dgr',0);WZ.tax.dedInterest=num('wz_dint',0);WZ.tax.dedSev=0;WZ.tax.dedOther=0;WZ.tax.renoLimit=num('wz_reno',0)||1;WZ.tax.renoWindow='first 3 years';}
+    else if(wzStep===6){WZ.assumptions.apprPct=num('wz_appr',2);WZ.assumptions.sonderAnnual=num('wz_sonder',0);}
+  }
+  function wzNext(){wzCollect();if(wzStep<WZ_COUNT-1){wzStep++;renderWizard();}else{wzFinish();}}
+  function wzBack(){wzCollect();if(wzStep>0){wzStep--;renderWizard();}}
+  function wzFinish(){wzCollect();if(!WZ.name){alert(TL().alertNeedName);return;}if(!(WZ.loan.principal>0)){alert(TL().alertNeedLoan);wzStep=2;renderWizard();return;}closeWizard();addPropertyObj(WZ);}
+
+  // ===================== manage (dated editing) =====================
+  function openManage(){renderManage();$('mgdr').classList.add('on');$('mgov').classList.add('on');}
+  function closeManage(){$('mgdr').classList.remove('on');$('mgov').classList.remove('on');}
+  function mgNum(label,path,val,step){return '<div class="field"><label>'+label+'</label><input type="number" data-path="'+path+'"'+(step?' step="'+step+'"':'')+' value="'+(val==null?'':val)+'"></div>';}
+  function mgMonth(label,path,val){return '<div class="field"><label>'+label+'</label><input type="month" data-path="'+path+'" value="'+(val==null?'':val)+'"></div>';}
+  function fieldsCard(title,rows){return '<div class="card" style="margin:8px 0;padding:12px 14px"><div class="b" style="color:var(--navy)">'+title+'</div><div class="g2">'+rows.join('')+'</div></div>';}
+  function creditFields(){
+    var L=P.loan,R=(P.refinance||{}),PU=P.purchase,TX=P.tax,AS=P.assumptions,M=TL().mg;
+    return ''
+    +fieldsCard(M.credit_title,[
+      mgNum(M.principal,'loan.principal',L.principal),
+      mgNum(M.rate,'loan.ratePct',L.ratePct,'0.01'),
+      mgNum(M.payment,'loan.payment',L.payment,'0.01'),
+      mgNum(M.sy,'loan.startYear',L.startYear),
+      mgNum(M.fix,'loan.fixedUntilYear',L.fixedUntilYear),
+      mgNum(M.term,'loan.termEndYear',L.termEndYear),
+      mgNum(M.smax,'loan.sonderMax',L.sonderMax),
+      mgNum(M.varr,'loan.varRatePct',L.varRatePct,'0.01')
+    ])
+    +'<div class="fh" style="margin:-4px 0 4px">'+M.credit_note+'</div>'
+    +fieldsCard(M.follow_title,[
+      mgNum(M.frate,'refinance.ratePct',R.ratePct,'0.01'),
+      mgNum(M.fend,'refinance.termEndYear',R.termEndYear),
+      mgNum(M.fpay,'refinance.payment',R.payment)
+    ])
+    +fieldsCard(M.ps_title,[
+      mgNum(M.price,'purchase.price',PU.price),
+      mgNum(M.ek,'purchase.eigenkapital',PU.eigenkapital),
+      mgNum(M.pc,'purchase.purchaseCosts',PU.purchaseCosts,'0.01'),
+      mgNum(M.condo,'purchase.condoBonus',PU.condoBonus),
+      mgNum(M.sc,'purchase.sellCostPct',PU.sellCostPct,'0.01'),
+      mgNum(M.sale_years,'purchase.saleYears',PU.saleYears)
+    ])
+    +fieldsCard(M.tax_title,[
+      mgNum(M.marg,'tax.marginalPct',TX.marginalPct),
+      mgNum(M.dint,'tax.dedInterest',TX.dedInterest,'0.01'),
+      mgNum(M.afa,'tax.dedAfa',TX.dedAfa),
+      mgNum(M.dhg,'tax.dedHausgeld',TX.dedHausgeld),
+      mgNum(M.dsev,'tax.dedSev',TX.dedSev,'0.01'),
+      mgNum(M.dgr,'tax.dedGrundsteuer',TX.dedGrundsteuer),
+      mgNum(M.doth,'tax.dedOther',TX.dedOther),
+      mgNum(M.dfin,'tax.dedFinancingOneOff',TX.dedFinancingOneOff,'0.01'),
+      mgNum(M.reno,'tax.renoLimit',TX.renoLimit,'0.01')
+    ])
+    +fieldsCard(M.assume_title,[
+      mgNum(M.idx,'assumptions.idxPct',AS.idxPct,'0.1'),
+      mgNum(M.appr,'assumptions.apprPct',AS.apprPct,'0.1'),
+      mgNum(M.sonder,'assumptions.sonderAnnual',AS.sonderAnnual),
+      mgMonth(M.asof,'asOfMonth',P.asOfMonth),
+      mgNum(M.asofpay,'asOfPayments',P.asOfPayments)
+    ]);
+  }
+  function seriesEditor(title,key,unit){
+    var s=P.costs[key]||[],M=TL().mg; var h='<div class="card" style="margin:8px 0;padding:12px 14px"><div class="b" style="color:var(--navy)">'+title+'</div>';
+    s.forEach(function(e,i){h+='<div class="drow"><input type="month" value="'+e.from+'" data-k="'+key+'" data-i="'+i+'" data-f="from"><input type="number" value="'+e.value+'" data-k="'+key+'" data-i="'+i+'" data-f="value"> '+unit+' <button class="wbtn sec" data-del="'+key+':'+i+'" style="padding:4px 8px">'+M.remove+'</button></div>';});
+    h+='<button class="wbtn sec" data-add="'+key+'" style="margin-top:8px;padding:5px 10px">'+M.add_dated+'</button></div>';
+    return h;
+  }
+  function rentEditor(){
+    var ex=P.rent.explicit,M=TL().mg; var h='<div class="card" style="margin:8px 0;padding:12px 14px"><div class="b" style="color:var(--navy)">'+M.rent_title+'</div>';
+    ex.forEach(function(e,i){h+='<div class="drow"><input type="month" value="'+e.from+'" data-rk="from" data-i="'+i+'"><input type="number" value="'+e.cold+'" data-rk="cold" data-i="'+i+'" title="cold"><input type="number" value="'+e.warm+'" data-rk="warm" data-i="'+i+'" title="warm"> '+(ex.length>1?'<button class="wbtn sec" data-rdel="'+i+'" style="padding:4px 8px">'+M.remove+'</button>':'')+'</div>';});
+    h+='<div class="fh">'+M.rent_fh+'</div><button class="wbtn sec" data-radd="1" style="margin-top:8px;padding:5px 10px">'+M.add_rent+'</button></div>';
+    return h;
+  }
+  function renderManage(){
+    var M=TL().mg;
+    $('mg-body').innerHTML=creditFields()+seriesEditor(M.hausgeld_title,'hausgeld',M.unit_mo)+seriesEditor(M.sev_title,'sev',M.unit_mo)+rentEditor();
+    [].slice.call($('mg-body').querySelectorAll('[data-add]')).forEach(function(b){b.addEventListener('click',function(){var k=b.getAttribute('data-add');P.costs[k]=P.costs[k]||[];var last=P.costs[k][P.costs[k].length-1];P.costs[k].push({from:(START_YEAR+2)+'-01',value:last?last.value:0});renderManage();});});
+    [].slice.call($('mg-body').querySelectorAll('[data-del]')).forEach(function(b){b.addEventListener('click',function(){var pr=b.getAttribute('data-del').split(':');if(P.costs[pr[0]].length>1)P.costs[pr[0]].splice(+pr[1],1);renderManage();});});
+    var radd=$('mg-body').querySelector('[data-radd]');if(radd)radd.addEventListener('click',function(){var last=P.rent.explicit[P.rent.explicit.length-1];P.rent.explicit.push({from:(START_YEAR+2)+'-01',cold:last.cold,warm:last.warm,bk:last.bk||0,hk:last.hk||0});renderManage();});
+    [].slice.call($('mg-body').querySelectorAll('[data-rdel]')).forEach(function(b){b.addEventListener('click',function(){var i=+b.getAttribute('data-rdel');if(P.rent.explicit.length>1)P.rent.explicit.splice(i,1);renderManage();});});
+  }
+  function manageSave(){
+    // read all scalar credit/tax/purchase/assumption fields (bound by data-path)
+    [].slice.call($('mg-body').querySelectorAll('[data-path]')).forEach(function(inp){
+      var parts=inp.getAttribute('data-path').split('.'),o=P;
+      for(var i=0;i<parts.length-1;i++){o[parts[i]]=o[parts[i]]||{};o=o[parts[i]];}
+      o[parts[parts.length-1]]=(inp.type==='month')?inp.value:(parseFloat(inp.value)||0);
+    });
+    CONTRACT_SNAP[P.id]={rate:P.loan.ratePct,payment:P.loan.payment}; // edited contract becomes the new reset baseline
+    // read cost series
+    ['hausgeld','sev'].forEach(function(k){var rows={};[].slice.call($('mg-body').querySelectorAll('[data-k="'+k+'"]')).forEach(function(inp){var i=inp.getAttribute('data-i'),f=inp.getAttribute('data-f');rows[i]=rows[i]||{};rows[i][f]=(f==='value')?(parseFloat(inp.value)||0):inp.value;});var arr=Object.keys(rows).map(function(i){return {from:rows[i].from,value:rows[i].value};});arr.sort(function(a,b){return a.from<b.from?-1:1;});if(arr.length)P.costs[k]=arr;});
+    // read rent
+    var rrows={};[].slice.call($('mg-body').querySelectorAll('[data-rk]')).forEach(function(inp){var i=inp.getAttribute('data-i'),f=inp.getAttribute('data-rk');rrows[i]=rrows[i]||{};rrows[i][f]=(f==='from')?inp.value:(parseFloat(inp.value)||0);});
+    var rarr=Object.keys(rrows).map(function(i){var e=rrows[i];return {from:e.from,cold:e.cold,warm:e.warm,bk:Math.max(0,Math.round((e.warm-e.cold)*0.6)),hk:Math.max(0,Math.round((e.warm-e.cold)*0.4))};});rarr.sort(function(a,b){return a.from<b.from?-1:1;});if(rarr.length)P.rent.explicit=rarr;
+    saveProp(P);setEngineFrom(P);renderAllForActive();closeManage();
+  }
+
+  // ===================== self-tests =====================
+  function runSelfTest(){
+    var T=[];function ok(n,c,g){T.push({n:n,p:!!c,g:(g===undefined?'':String(g))});}function near(a,b,t){return Math.abs(a-b)<=t;}
+    // The sample property is fictional; these baselines are this engine's own output for it, so they
+    // act as regression pins. The real correctness proofs are the closed-form cross-check below and the
+    // independent Python harness in tests/analyst_check.py.
+    var Q=sampleProperty(); setEngineFrom(Q);
+    var b0=amortize(0);
+    ok('sample months=361',b0.months===361,b0.months);
+    ok('sample payoff=2055',b0.payoffYear===2055,b0.payoffYear);
+    ok('sample balAtFix=226.749,52 (±2)',near(b0.balAt2035,226749.52,2),b0.balAt2035.toFixed(2));
+    ok('sample totInt=203.234 (±10)',near(b0.totInt,203234,10),b0.totInt.toFixed(2));
+    var sumP=0;b0.yearly.forEach(function(r){sumP+=r.p;});ok('principal sums to loan (±1)',near(sumP,LOAN,1),sumP.toFixed(2));
+    ok('refiPayment(5,50%) ~1.559,78 (±2)',near(refiPayment(0.055),1559.78,2),refiPayment(0.055).toFixed(2));
+    ok('refiPayment(4,50%) ~1.434,53 (±2)',near(refiPayment(0.045),1434.53,2),refiPayment(0.045).toFixed(2));
+    ok('refiPayment rises with the rate',refiPayment(0.06)>refiPayment(0.04),'');
+    var c15=computeSonder(1500);ok('overpay 1.500/yr pays in 15.000 (10 years to fix)',c15.totalSonder===15000,c15.totalSonder);
+    ok('overpay 1.500/yr saves lifetime interest',c15.intSaved>0 && c15.balDiff>0,c15.intSaved.toFixed(0));
+    ok('totalDed=19.965,40',near(totalDed(),19965.40,0.01),totalDed().toFixed(2));
+    ok('financing one-off (500) stays OUT of recurring totalDed',DED.financing===500 && near(totalDed(),19965.40,0.01),'fin='+DED.financing);
+    var _fin=DED.financing,_pON=projectYears(0);DED.financing=0;var _pOFF=projectYears(0);DED.financing=_fin;
+    ok('financing one-off lifts only the first projection year',near(_pON[0].afterTax-_pOFF[0].afterTax,_fin*taxRate/12,0.01)&&near(_pON[1].afterTax-_pOFF[1].afterTax,0,0.01),(_pON[0].afterTax-_pOFF[0].afterTax).toFixed(2));
+    var tm=taxModel(0.42);ok('tax saving ~2.841 (±1)',near(tm.saving,2841.47,1),tm.saving.toFixed(2));
+    ok('after-tax ~-141 (±1)',near(tm.afterTaxNet,-141.08,1),tm.afterTaxNet.toFixed(2));
+    var p2=projectYears(0.02);ok('projection yr1 gap=-377,87',near(p2[0].grossNet,-377.87,0.5),p2[0].grossNet.toFixed(2));
+    ok('projection improves by fixed end',p2[p2.length-1].grossNet>p2[0].grossNet,'');
+    ok('sale 2% value=320k x1.02^10',near(saleScenario(0.02).saleValue,320000*Math.pow(1.02,10),1),Math.round(saleScenario(0.02).saleValue));
+    ok('sale profit rises with appreciation',saleScenario(0.04).profit>saleScenario(0).profit,Math.round(saleScenario(0.04).profit-saleScenario(0).profit));
+    ok('reno headroom(10.000)=23.600',near(renoLeft(10000),23600,0.01),renoLeft(10000));
+    // resolver
+    ok('valueAt picks effective entry',valueAt([{from:'2025-01',value:350},{from:'2027-01',value:380}],'2027-03')===380,'');
+    ok('valueAt before any change uses first',valueAt([{from:'2025-01',value:350},{from:'2027-01',value:380}],'2026-01')===350,'');
+    // multi-property: a second generic property computes independently
+    var G=blankProperty();G.country='ES';G.loan.principal=200000;G.loan.ratePct=3;G.loan.payment=1100;G.loan.startYear=2026;G.loan.fixedUntilYear=2036;G.loan.termEndYear=2056;G.purchase.price=250000;
+    setEngineFrom(G);var gb=amortize(0);ok('generic property amortizes independently',gb.yearly.length>0 && LOAN===200000,'LOAN='+LOAN);
+    ok('generic property pays off within its term',gb.payoffYear<=G.loan.termEndYear && gb.payoffYear>2026,gb.payoffYear);
+    ok('generic property carries no seeded condoBonus',G.purchase.condoBonus===0,G.purchase.condoBonus);
+    setEngineFrom(Q); // restore
+    // store round-trip
+    ok('validateProp accepts the sample',validateProp(Q),'');
+    ok('validateProp rejects junk',!validateProp({foo:1}),'');
+    // one-off Sondertilgung events
+    ok('annuity(100k,4%/12,120) ~1.012,45 (±1)',near(annuity(100000,0.04/12,120),1012.45,1),annuity(100000,0.04/12,120).toFixed(2));
+    var oo=amortize(0,[{from:'2027-06',amount:10000}]);
+    ok('one-off 10k lowers balance at fixed end',oo.balAt2035<b0.balAt2035,'-'+(b0.balAt2035-oo.balAt2035).toFixed(0));
+    ok('one-off 10k saves lifetime interest',oo.totInt<b0.totInt,'-'+(b0.totInt-oo.totInt).toFixed(0));
+    ok('one-off 10k pays off no later',oo.payoffYear<=b0.payoffYear,oo.payoffYear);
+    ok('one-off outside any month is ignored',near(amortize(0,[{from:'2099-01',amount:9999}]).balAt2035,b0.balAt2035,0.01),'');
+    // phase-2 projection (follow-on rate). Default = continue current rate = baseline.
+    var contInt=amortize(0,[],{ratePct:FIXR*100,termEndYear:2055,payment:0}).totInt;
+    ok('projection at current rate equals baseline interest (±1)',near(contInt,b0.totInt,1),(contInt-b0.totInt).toFixed(2));
+    var rr=amortize(0,[],{ratePct:6,termEndYear:2055,payment:0});
+    ok('follow-on 6% raises lifetime interest vs continuing',rr.totInt>b0.totInt,'+'+(rr.totInt-b0.totInt).toFixed(0));
+    ok('follow-on auto-payment clears by its term year',rr.payoffYear===2055,rr.payoffYear);
+    var rr8=amortize(0,[],{ratePct:8,termEndYear:2055,payment:0});
+    ok('higher follow-on rate costs more interest (6% < 8%)',rr8.totInt>rr.totInt,'+'+(rr8.totInt-rr.totInt).toFixed(0));
+    var rsh=amortize(0,[],{ratePct:FIXR*100,termEndYear:2045,payment:0});
+    ok('shorter follow-on term clears sooner',rsh.payoffYear<=2045,rsh.payoffYear);
+    // independent closed-form cross-check (financial analyst): the month-by-month engine must equal the
+    // exact annuity recurrence solution B_k = P(1+r)^k - A((1+r)^k-1)/r for the fixed period, at any rate.
+    function cfBal(P0,ratePct,pay,k){var r=ratePct/100/12;return P0*Math.pow(1+r,k)-pay*(Math.pow(1+r,k)-1)/r;}
+    [3,3.80,5,6,8].forEach(function(rt){
+      var QQ=sampleProperty();QQ.loan.ratePct=rt;var pmt=annuity(300000,rt/100/12,(QQ.loan.termEndYear-QQ.loan.startYear)*12);
+      QQ.loan.payment=pmt;QQ.refinance.ratePct=rt;setEngineFrom(QQ);
+      var run=amortize(0),k=(FIXEND-START_YEAR+1)*12,exp=cfBal(300000,rt,pmt,k);
+      ok('closed-form balance at fixed end matches engine @'+deDec2(rt)+'% (±0,05)',near(run.balAt2035,exp,0.05),'exp '+exp.toFixed(2)+' got '+run.balAt2035.toFixed(2));
+    });
+    // negative-amortization guard: a payment below the monthly interest must not explode the balance
+    var QU=sampleProperty();QU.loan.ratePct=10;QU.loan.payment=500;setEngineFrom(QU);var deg=amortize(0);
+    ok('engine guards negative amortization (balance stays <= principal)',deg.balAt2035<=300000.01,deg.balAt2035.toFixed(2));
+    setEngineFrom(Q);
+    // Effektivzins is a derived OUTPUT from the Sollzins (monthly compounding), never an input
+    ok('effAnnual(3,80%) derives ~3,8669% (±0,001)',near(effAnnual(3.80),3.8669,0.001),effAnnual(3.80).toFixed(4));
+    ok('derived effective rate is above the nominal rate',effAnnual(3.80)>3.80,effAnnual(3.80).toFixed(4));
+
+    var pass=T.filter(function(t){return t.p;}).length,total=T.length,allOk=(pass===total);
+    var rows=T.map(function(t){return '<tr><td class="'+(t.p?'pass':'fail')+'">'+(t.p?'PASS':'FAIL')+'</td><td>'+t.n+'</td><td>'+t.g+'</td></tr>';}).join('');
+    var panel=document.createElement('div');panel.id='testpanel';
+    panel.innerHTML='<div class="summary '+(allOk?'ok':'bad')+'">'+(allOk?'✓ ':'✗ ')+pass+' / '+total+' tests passed</div><button id="test-close">Close</button><table><thead><tr><th>Result</th><th>Test</th><th>Value</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    document.body.appendChild(panel);$('test-close').addEventListener('click',function(){panel.remove();});
+    if(window.console){console.log('[self-test] '+pass+'/'+total+' passed');}
+  }
+
+  // ===================== init =====================
+  function init(){
+    captureEn(); applyI18n(); // snapshot the English defaults, then apply the saved language
+    $('lang-toggle').addEventListener('click',toggleLocale);
+    wireTabs();
+    $('tsl').addEventListener('input',function(){setTax(this.value);saveUi();});
+    $('tsl2').addEventListener('input',function(){setTax(this.value);saveUi();});
+    $('ssl').addEventListener('input',function(){setSonder(this.value);saveUi();});
+    $('snum').addEventListener('input',function(){setSonder(this.value);saveUi();});
+    $('rsl').addEventListener('input',function(){setRate(this.value);saveUi();});
+    $('idx').addEventListener('input',function(){setIndex(this.value);saveUi();});
+    $('apr').addEventListener('input',function(){setAppr(this.value);saveUi();});
+    $('reno').addEventListener('input',function(){setReno(this.value);});
+    $('oneoff-add').addEventListener('click',addOneOff);
+    ['refi-cur','refi-rate','refi-end','refi-pay'].forEach(function(id){$(id).addEventListener('change',commitRefi);});
+    $('refi-reset').addEventListener('click',resetRefi);
+    [].slice.call(document.querySelectorAll('#rate-presets [data-rate]')).forEach(function(b){b.addEventListener('click',function(){var v=b.getAttribute('data-rate');setRate(v==='same'?(FIXR*100):parseFloat(v));saveUi();});});
+    $('help-open').addEventListener('click',toggleHelp);$('help-close').addEventListener('click',toggleHelp);$('helpov').addEventListener('click',toggleHelp);
+    $('prop-add').addEventListener('click',openWizard);
+    $('prop-manage').addEventListener('click',openManage);
+    $('prop-delete').addEventListener('click',deleteActive);
+    $('prop-export').addEventListener('click',exportActive);
+    $('prop-import').addEventListener('click',function(){$('importfile').click();});
+    $('importfile').addEventListener('change',function(){if(this.files&&this.files[0]){importFile(this.files[0]);this.value='';}});
+    $('wz-next').addEventListener('click',wzNext);$('wz-back').addEventListener('click',wzBack);$('wz-savefin').addEventListener('click',wzFinish);$('wz-close').addEventListener('click',closeWizard);$('wzov').addEventListener('click',closeWizard);
+    $('mg-save').addEventListener('click',manageSave);$('mg-close').addEventListener('click',closeManage);$('mgov').addEventListener('click',closeManage);
+
+    var idx=bootstrap(); var active=loadProp(idx.activeId)||sampleProperty();
+    setEngineFrom(active); renderAllForActive();
+
+    var rt=null;window.addEventListener('resize',function(){if(rt)cancelAnimationFrame(rt);rt=requestAnimationFrame(drawAll);});
+    if(location.search.indexOf('test')>=0||location.hash.indexOf('test')>=0){
+      // expose the engine for independent (financial-analyst) cross-checks under ?test only
+      window.MD_ENGINE={amortize:amortize,setEngineFrom:setEngineFrom,sampleProperty:sampleProperty,blankProperty:blankProperty,annuity:annuity,refiPayment:refiPayment,taxModel:taxModel,totalDed:totalDed,vars:function(){return {LOAN:LOAN,FIXR:FIXR,MR:MR,MP:MP,FIXEND:FIXEND,TERM_END:TERM_END,START_YEAR:START_YEAR,BAL2035:BAL2035,RENT_COLD:RENT_COLD};}};
+      runSelfTest();
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+</body>
+</html>

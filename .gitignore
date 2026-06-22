@@ -1,0 +1,32 @@
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*~
+
+# ---- Python / test tooling ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+playwright-report/
+test-results/
+*.png            # screenshots written by the test scripts (to the temp dir, but ignore anywhere)
+
+# ---- Private / personal data (keep your real figures OUT of this public repo) ----
+# This project ships only a fictional sample. If you fork it for your own property,
+# keep your real data in files matching these patterns so they are never committed.
+*.local.*
+*.private.*
+private/
+my-*/
+*-actuals.*
+*-actual.*
+context/
+exports/
+*.property.json
